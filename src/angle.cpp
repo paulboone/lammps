@@ -22,6 +22,10 @@
 #include "memory.h"
 #include "error.h"
 
+#include <iostream>
+#include <stdio.h>
+
+
 using namespace LAMMPS_NS;
 using namespace MathConst;
 
@@ -35,9 +39,10 @@ Angle::Angle(LAMMPS *lmp) : Pointers(lmp)
   allocated = 0;
   suffix_flag = Suffix::NONE;
 
-  maxeatom = maxvatom = 0;
+  maxhatom = maxeatom = maxvatom = 0;
   eatom = NULL;
   vatom = NULL;
+  hatom = NULL;
   setflag = NULL;
 
   datamask = ALL_MASK;
@@ -82,6 +87,7 @@ void Angle::init()
 void Angle::ev_setup(int eflag, int vflag)
 {
   int i,n;
+  int hflag = 1;
 
   evflag = 1;
 
@@ -106,6 +112,10 @@ void Angle::ev_setup(int eflag, int vflag)
     memory->create(vatom,comm->nthreads*maxvatom,6,"angle:vatom");
   }
 
+  // maxhatom = atom->nmax;
+  // memory->destroy(hatom);
+  // memory->create(hatom,comm->nthreads*maxhatom,"angle:hatom");
+
   // zero accumulators
 
   if (eflag_global) energy = 0.0;
@@ -127,6 +137,13 @@ void Angle::ev_setup(int eflag, int vflag)
       vatom[i][5] = 0.0;
     }
   }
+  // if (hflag) {
+  //   n = atom->nlocal;
+  //   if (force->newton_bond) n += atom->nghost;
+  //   for (i = 0; i < n; i++) {
+  //     hatom[i] = 0.0;
+  //   }
+  // }
 }
 
 /* ----------------------------------------------------------------------
@@ -147,7 +164,6 @@ void Angle::ev_tally(int i, int j, int k, int nlocal, int newton_bond,
       else {
         eanglethird = THIRD*eangle;
         if (i < nlocal) energy += eanglethird;
-        if (j < nlocal) energy += eanglethird;
         if (k < nlocal) energy += eanglethird;
       }
     }
@@ -230,6 +246,25 @@ void Angle::ev_tally(int i, int j, int k, int nlocal, int newton_bond,
       }
     }
   }
+
+  double **vel = atom->v;
+  double hfa[3];
+
+  // if (hflag) {
+    double f2[3];
+    double f1v1, f2v2, f3v3;
+    f2[0] = -(f3[0] + f1[0]);
+    f2[1] = -(f3[1] + f1[1]);
+    f2[2] = -(f3[2] + f1[2]);
+    f1v1 = f1[0]*vel[i][0] + f1[1]*vel[i][1] + f1[2]*vel[i][2];
+    f2v2 = f2[0]*vel[j][0] + f2[1]*vel[j][1] + f2[2]*vel[j][2];
+    f3v3 = f3[0]*vel[k][0] + f3[1]*vel[k][1] + f3[2]*vel[k][2];
+    hfa[0] = (f1v1 - f2v2) * delx1 + (f1v1 - f3v3) * (delx1 - delx2) + (f2v2 - f3v3) * (-delx2);
+    hfa[1] = (f1v1 - f2v2) * dely1 + (f1v1 - f3v3) * (dely1 - dely2) + (f2v2 - f3v3) * (-dely2);
+    hfa[2] = (f1v1 - f2v2) * delz1 + (f1v1 - f3v3) * (delz1 - delz2) + (f2v2 - f3v3) * (-delz2);
+
+    std::cout << i << ", " << hfa[0] << ", " << hfa[1] << ", " << hfa[2] << "\n";
+  // }
 }
 
 /* ---------------------------------------------------------------------- */
