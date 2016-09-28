@@ -27,7 +27,7 @@ class Improper : protected Pointers {
   int writedata;                  // 1 if writes coeffs to data file
   double energy;                  // accumulated energies
   double virial[6];               // accumulated virial
-  double *eatom,**vatom;          // accumulated per-atom energy/virial
+  double *eatom,**vatom,**hatom;  // accumulated per-atom energy/virial/atomic heat flux
 
   // KOKKOS host/device flag and data masks
 
@@ -55,7 +55,8 @@ class Improper : protected Pointers {
   int evflag;
   int eflag_either,eflag_global,eflag_atom;
   int vflag_either,vflag_global,vflag_atom;
-  int maxeatom,maxvatom;
+  int hflag_atom;
+  int maxeatom,maxvatom,maxhatom;
 
   void ev_init(int eflag, int vflag, int alloc = 1) {
     if (eflag||vflag) ev_setup(eflag, vflag, alloc);
