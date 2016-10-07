@@ -144,9 +144,9 @@ void Angle::ev_setup(int eflag, int vflag)
     n = atom->nlocal;
     if (force->newton_bond) n += atom->nghost;
     for (i = 0; i < n; i++) {
-      hatom[i][0] = 1.0;
-      hatom[i][1] = 1.0;
-      hatom[i][2] = 1.0;
+      hatom[i][0] = 0.0;
+      hatom[i][1] = 0.0;
+      hatom[i][2] = 0.0;
     }
   }
 }

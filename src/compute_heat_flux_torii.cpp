@@ -34,7 +34,7 @@ ComputeHeatFluxTorii::ComputeHeatFluxTorii(LAMMPS *lmp, int narg, char **arg) :
   if (narg != 3) error->all(FLERR,"Illegal compute ke command");
 
   vector_flag = 1;
-  extvector = 1;
+  extvector = 0;
 
   size_vector = 3;
   vector = new double[size_vector];
