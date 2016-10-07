@@ -63,6 +63,7 @@ Angle::~Angle()
 
   memory->destroy(eatom);
   memory->destroy(vatom);
+  memory->destroy(hatom);
 }
 
 /* ----------------------------------------------------------------------
@@ -87,8 +88,8 @@ void Angle::init()
 void Angle::ev_setup(int eflag, int vflag)
 {
   int i,n;
-  int hflag = 1;
 
+  hflag = 1;
   evflag = 1;
 
   eflag_either = eflag;
@@ -111,10 +112,12 @@ void Angle::ev_setup(int eflag, int vflag)
     memory->destroy(vatom);
     memory->create(vatom,comm->nthreads*maxvatom,6,"angle:vatom");
   }
+  if (hflag && atom->nmax > maxhatom) {
+    maxhatom = atom->nmax;
+    memory->destroy(hatom);
+    memory->create(hatom,comm->nthreads*maxhatom,3,"angle:hatom");
+  }
 
-  // maxhatom = atom->nmax;
-  // memory->destroy(hatom);
-  // memory->create(hatom,comm->nthreads*maxhatom,"angle:hatom");
 
   // zero accumulators
 
@@ -137,13 +140,15 @@ void Angle::ev_setup(int eflag, int vflag)
       vatom[i][5] = 0.0;
     }
   }
-  // if (hflag) {
-  //   n = atom->nlocal;
-  //   if (force->newton_bond) n += atom->nghost;
-  //   for (i = 0; i < n; i++) {
-  //     hatom[i] = 0.0;
-  //   }
-  // }
+  if (hflag) {
+    n = atom->nlocal;
+    if (force->newton_bond) n += atom->nghost;
+    for (i = 0; i < n; i++) {
+      hatom[i][0] = 1.0;
+      hatom[i][1] = 1.0;
+      hatom[i][2] = 1.0;
+    }
+  }
 }
 
 /* ----------------------------------------------------------------------
@@ -250,7 +255,7 @@ void Angle::ev_tally(int i, int j, int k, int nlocal, int newton_bond,
   double **vel = atom->v;
   double hfa[3];
 
-  // if (hflag) {
+  if (hflag) {
     double f2[3];
     double f1v1, f2v2, f3v3;
     f2[0] = -(f3[0] + f1[0]);
@@ -263,8 +268,11 @@ void Angle::ev_tally(int i, int j, int k, int nlocal, int newton_bond,
     hfa[1] = (f1v1 - f2v2) * dely1 + (f1v1 - f3v3) * (dely1 - dely2) + (f2v2 - f3v3) * (-dely2);
     hfa[2] = (f1v1 - f2v2) * delz1 + (f1v1 - f3v3) * (delz1 - delz2) + (f2v2 - f3v3) * (-delz2);
 
-    std::cout << i << ", " << hfa[0] << ", " << hfa[1] << ", " << hfa[2] << "\n";
-  // }
+    hatom[j][0] += hfa[0];
+    hatom[j][1] += hfa[1];
+    hatom[j][2] += hfa[2];
+    // std::cout << i << ", " << hfa[0] << ", " << hfa[1] << ", " << hfa[2] << "\n";
+  }
 }
 
 /* ---------------------------------------------------------------------- */
@@ -273,5 +281,6 @@ double Angle::memory_usage()
 {
   double bytes = comm->nthreads*maxeatom * sizeof(double);
   bytes += comm->nthreads*maxvatom*6 * sizeof(double);
+  bytes += comm->nthreads*maxhatom*3 * sizeof(double);
   return bytes;
 }
