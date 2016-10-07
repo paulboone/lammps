@@ -12,12 +12,8 @@
 ------------------------------------------------------------------------- */
 
 #include "compute_heat_flux_torii.h"
-#include "atom.h"
 #include "angle.h"
-#include "update.h"
 #include "force.h"
-#include "domain.h"
-#include "group.h"
 #include "error.h"
 
 #include <iostream>
@@ -42,35 +38,15 @@ ComputeHeatFluxTorii::ComputeHeatFluxTorii(LAMMPS *lmp, int narg, char **arg) :
 
 /* ---------------------------------------------------------------------- */
 
-void ComputeHeatFluxTorii::init()
-{
-
-}
-
-ComputeHeatFluxTorii::~ComputeHeatFluxTorii()
-{
-  // delete [] vector;
-}
+void ComputeHeatFluxTorii::init(){}
+ComputeHeatFluxTorii::~ComputeHeatFluxTorii(){}
 
 /* ---------------------------------------------------------------------- */
 
 void ComputeHeatFluxTorii::compute_vector()
 {
-  double total[3];
-  double **hatom = force->angle->hatom;
-  int i,n;
-
-  total[0] = 0.0;
-  total[1] = 0.0;
-  total[2] = 0.0;
-
-  n = atom->nlocal;
-  for (i=0; i<n; i++) {
-    total[0] += hatom[i][0];
-    total[1] += hatom[i][1];
-    total[2] += hatom[i][2];
-  }
+  double * heatflux = force->angle->heatflux;
   // std::cout << "HF_TORII total: " << total[0] << ", " << total[1] << ", " << total[2] << "\n";
-  MPI_Allreduce(&total,vector,size_vector,MPI_DOUBLE,MPI_SUM,world);
+  MPI_Allreduce(heatflux,vector,size_vector,MPI_DOUBLE,MPI_SUM,world);
   // std::cout << "HF_TORII scalar: " << vector[0] << ", " << vector[1] << ", " << vector[2] << ", " << "\n";
 }
