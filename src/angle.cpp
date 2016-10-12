@@ -133,9 +133,9 @@ void Angle::ev_setup(int eflag, int vflag)
     }
   }
   if (hflag) {
-    heatflux[0] = 0.0;
-    heatflux[1] = 0.0;
-    heatflux[2] = 0.0;
+    heatflux_angle[0] = 0.0;
+    heatflux_angle[1] = 0.0;
+    heatflux_angle[2] = 0.0;
   }
 }
 
@@ -253,9 +253,9 @@ void Angle::ev_tally(int i, int j, int k, int nlocal, int newton_bond,
     f2v2 = f2[0]*vel[j][0] + f2[1]*vel[j][1] + f2[2]*vel[j][2];
     f3v3 = f3[0]*vel[k][0] + f3[1]*vel[k][1] + f3[2]*vel[k][2];
 
-    heatflux[0] += (f1v1 - f2v2) * delx1 + (f1v1 - f3v3) * (delx1 - delx2) + (f2v2 - f3v3) * (-delx2);
-    heatflux[1] += (f1v1 - f2v2) * dely1 + (f1v1 - f3v3) * (dely1 - dely2) + (f2v2 - f3v3) * (-dely2);
-    heatflux[2] += (f1v1 - f2v2) * delz1 + (f1v1 - f3v3) * (delz1 - delz2) + (f2v2 - f3v3) * (-delz2);
+    heatflux_angle[0] +=THIRD*((f1v1 - f2v2) * delx1 + (f1v1 - f3v3) * (delx1 - delx2) + (f2v2 - f3v3) * (-delx2));
+    heatflux_angle[1] += THIRD*((f1v1 - f2v2) * dely1 + (f1v1 - f3v3) * (dely1 - dely2) + (f2v2 - f3v3) * (-dely2));
+    heatflux_angle[2] += THIRD*((f1v1 - f2v2) * delz1 + (f1v1 - f3v3) * (delz1 - delz2) + (f2v2 - f3v3) * (-delz2));
     // std::cout << i << ", " << hfa[0] << ", " << hfa[1] << ", " << hfa[2] << "\n";
   }
 }

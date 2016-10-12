@@ -28,6 +28,7 @@ class Bond : protected Pointers {
   int writedata;                  // 1 if writes coeffs to data file
   double energy;                  // accumulated energies
   double virial[6];               // accumlated virial
+  double heatflux_bond[3];             // accumulated heat flux
   double *eatom,**vatom;          // accumulated per-atom energy/virial
   unsigned int datamask;
   unsigned int datamask_ext;
@@ -62,7 +63,8 @@ class Bond : protected Pointers {
   int evflag;
   int eflag_either,eflag_global,eflag_atom;
   int vflag_either,vflag_global,vflag_atom;
-  int maxeatom,maxvatom;
+  int hflag;
+  int maxeatom,maxvatom,maxhfa;
 
   void ev_setup(int, int);
   void ev_tally(int, int, int, int, double, double, double, double, double);

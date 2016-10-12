@@ -13,6 +13,7 @@
 
 #include "compute_heat_flux_torii.h"
 #include "angle.h"
+#include "bond.h"
 #include "force.h"
 #include "error.h"
 
@@ -45,7 +46,8 @@ ComputeHeatFluxTorii::~ComputeHeatFluxTorii(){}
 
 void ComputeHeatFluxTorii::compute_vector()
 {
-  double * heatflux = force->angle->heatflux;
+//  double * heatflux = force->angle->heatflux_angle;
+  double * heatflux = force->bond->heatflux_bond;
   // std::cout << "HF_TORII total: " << total[0] << ", " << total[1] << ", " << total[2] << "\n";
   MPI_Allreduce(heatflux,vector,size_vector,MPI_DOUBLE,MPI_SUM,world);
   // std::cout << "HF_TORII scalar: " << vector[0] << ", " << vector[1] << ", " << vector[2] << ", " << "\n";
