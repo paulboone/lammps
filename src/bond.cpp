@@ -22,6 +22,9 @@
 #include "memory.h"
 #include "error.h"
 
+#include <iostream>
+#include <stdio.h>
+
 using namespace LAMMPS_NS;
 
 enum{NONE,LINEAR,SPLINE};
@@ -202,12 +205,14 @@ void Bond::ev_tally(int i, int j, int nlocal, int newton_bond,
 
     if (vflag_atom) {
       if (newton_bond || i < nlocal) {
+        // std::cout << "SETTING VATOM " << i << "\n";
         vatom[i][0] += 0.5*v[0];
         vatom[i][1] += 0.5*v[1];
         vatom[i][2] += 0.5*v[2];
         vatom[i][3] += 0.5*v[3];
         vatom[i][4] += 0.5*v[4];
         vatom[i][5] += 0.5*v[5];
+        // std::cout << "SETTING VATOM2 " << vatom[i][0] << "\n";
       }
       if (newton_bond || j < nlocal) {
         vatom[j][0] += 0.5*v[0];
@@ -217,22 +222,41 @@ void Bond::ev_tally(int i, int j, int nlocal, int newton_bond,
         vatom[j][4] += 0.5*v[4];
         vatom[j][5] += 0.5*v[5];
       }
+
+      double **vel = atom->v;
+      double f1[3];
+      double f1v1, f2v2;
+      f1[0] = delx*fbond;
+      f1[1] = dely*fbond;
+      f1[2] = delz*fbond;
+      f1v1 = f1[0]*vel[i][0] + f1[1]*vel[i][1] + f1[2]*vel[i][2];
+      f2v2 = -(f1[0]*vel[j][0] + f1[1]*vel[j][1] + f1[2]*vel[j][2]);
+
+      heatflux_bond[0] += 0.5 * (f1v1 - f2v2) * delx;
+      heatflux_bond[1] += 0.5 * (f1v1 - f2v2) * dely;
+      heatflux_bond[2] += 0.5 * (f1v1 - f2v2) * delz;
+
+      // heatflux_bond_x  = 0.5 * delx * (delx*fbond *vel[i][0] + dely*fbond*vel[i][1] + delz*fbond*vel[i][2]);
+      // heatflux_bond_x += 0.5 * delx * (delx*fbond*vel[j][0] + dely*fbond*vel[j][1] + delz*fbond*vel[j][2]);
+
+      double heatflux_bond_lammps_x;
+      heatflux_bond_lammps_x = 0.0;
+      // std::cout << "\nheatflux_bond_lammps_x1: " << heatflux_bond_lammps_x;
+      heatflux_bond_lammps_x  = 0.5 * (v[0]*vel[i][0] + v[3]*vel[i][1] + v[4]*vel[i][2]);
+      heatflux_bond_lammps_x += 0.5 * (v[0]*vel[j][0] + v[3]*vel[j][1] + v[4]*vel[j][2]);
+      // heatflux_bond_lammps_x += 0.5*v[0]*vel[j][0] + vatom[j][3]*vel[j][1] + vatom[j][4]*vel[j][2];
+      std::cout << "\nheatflux_bond_lammps_x2: " << heatflux_bond_lammps_x;
+
+      std::cout << "\nheatflux_bond: " << 0.5 * (f1v1 - f2v2) * delx << "\n";
+      // std::cout << heatflux_bond_lammps_x << "\n";
     }
   }
-  if (hflag) {
-    double **vel = atom->v;
-    double f1[3];
-    double f1v1, f2v2;
-    f1[0] = delx*fbond;
-    f1[1] = dely*fbond;
-    f1[2] = delz*fbond;
-    f1v1 = f1[0]*vel[i][0] + f1[1]*vel[i][1] + f1[2]*vel[i][2];
-    f2v2 = -(f1[0]*vel[j][0] + f1[1]*vel[j][1] + f1[2]*vel[j][2]);
+  // if (hflag) {
 
-    heatflux_bond[0] += 0.5 * (f1v1 - f2v2) * delx;
-    heatflux_bond[1] += 0.5 * (f1v1 - f2v2) * dely;
-    heatflux_bond[2] += 0.5 * (f1v1 - f2v2) * delz;
-  }
+  // }
+
+
+
 }
 
 /* ----------------------------------------------------------------------
