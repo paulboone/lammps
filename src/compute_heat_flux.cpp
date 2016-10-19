@@ -141,6 +141,7 @@ void ComputeHeatFlux::compute_vector()
   double jve[3] = {0.0,0.0,0.0};
   double eng;
 
+  std::cout << "nlocal " << nlocal << "\n";
   for (int i = 0; i < nlocal; i++) {
     if (mask[i] & groupbit) {
       eng = pe[i] + ke[i];

@@ -39,6 +39,8 @@
 #include "error.h"
 #include "memory.h"
 
+#include <iostream>
+
 using namespace LAMMPS_NS;
 
 #define BUFFACTOR 1.5
@@ -1143,6 +1145,7 @@ void CommBrick::reverse_comm_compute(Compute *compute)
     // if self, set recv buffer to send buffer
 
     if (sendproc[iswap] != me) {
+      std::cout << "\nnot me!\n";
       if (sendnum[iswap])
         MPI_Irecv(buf_recv,nsize*sendnum[iswap],MPI_DOUBLE,sendproc[iswap],0,
                   world,&request);
@@ -1150,7 +1153,10 @@ void CommBrick::reverse_comm_compute(Compute *compute)
         MPI_Send(buf_send,n,MPI_DOUBLE,recvproc[iswap],0,world);
       if (sendnum[iswap]) MPI_Wait(&request,MPI_STATUS_IGNORE);
       buf = buf_recv;
-    } else buf = buf_send;
+    } else {
+      buf = buf_send;
+      std::cout << "\nme!\n";
+    }
 
     // unpack buffer
 

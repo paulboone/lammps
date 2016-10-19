@@ -226,20 +226,24 @@ void Bond::ev_tally(int i, int j, int nlocal, int newton_bond,
         vatom[j][5] += 0.5*v[5];
       }
 
-      // std::cout << " vflag_atom";
-      double **vel = atom->v;
-      double f1[3];
-      double f1v1, f2v2;
-      f1[0] = delx*fbond;
-      f1[1] = dely*fbond;
-      f1[2] = delz*fbond;
-      f1v1 = f1[0]*vel[i][0] + f1[1]*vel[i][1] + f1[2]*vel[i][2];
-      f2v2 = -(f1[0]*vel[j][0] + f1[1]*vel[j][1] + f1[2]*vel[j][2]);
+      if (true || i < nlocal && j < nlocal) {
+        // std::cout << " vflag_atom";
+        double **vel = atom->v;
+        double f1[3];
+        double f1v1, f2v2;
+        f1[0] = delx*fbond;
+        f1[1] = dely*fbond;
+        f1[2] = delz*fbond;
+        f1v1 = f1[0]*vel[i][0] + f1[1]*vel[i][1] + f1[2]*vel[i][2];
+        f2v2 = -(f1[0]*vel[j][0] + f1[1]*vel[j][1] + f1[2]*vel[j][2]);
 
-      heatflux_bond[0] += 0.5 * (f1v1 - f2v2) * delx;
-      heatflux_bond[1] += 0.5 * (f1v1 - f2v2) * dely;
-      heatflux_bond[2] += 0.5 * (f1v1 - f2v2) * delz;
+        heatflux_bond[0] += 0.5 * (f1v1 - f2v2) * delx;
+        heatflux_bond[1] += 0.5 * (f1v1 - f2v2) * dely;
+        heatflux_bond[2] += 0.5 * (f1v1 - f2v2) * delz;
+      }
 
+      if (i >= nlocal || j >= nlocal)
+        std::cout << "\ni,j, >= nlocal: " << i << "-" << j << "\n";
       // heatflux_bond_x  = 0.5 * delx * (delx*fbond *vel[i][0] + dely*fbond*vel[i][1] + delz*fbond*vel[i][2]);
       // heatflux_bond_x += 0.5 * delx * (delx*fbond*vel[j][0] + dely*fbond*vel[j][1] + delz*fbond*vel[j][2]);
 

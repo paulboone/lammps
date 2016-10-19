@@ -162,11 +162,15 @@ void ComputeStressAtom::compute_peratom()
   int nbond = nlocal;
   int ntotal = nlocal;
   int nkspace = nlocal;
+
+  std::cout << "\nnlocal " << nlocal << " ntotal " << ntotal;
+
   if (force->newton) npair += atom->nghost;
   if (force->newton_bond) nbond += atom->nghost;
   if (force->newton) ntotal += atom->nghost;
   if (force->kspace && force->kspace->tip4pflag) nkspace += atom->nghost;
 
+  std::cout << "\nnlocal " << nlocal << " ntotal " << ntotal;
   double stress_sum;
 
   // clear local stress array
@@ -261,8 +265,15 @@ void ComputeStressAtom::compute_peratom()
 
   // communicate ghost virials between neighbor procs
 
-  if (force->newton || (force->kspace && force->kspace->tip4pflag))
-    comm->reverse_comm_compute(this);
+  // if (force->newton || (force->kspace && force->kspace->tip4pflag))
+  //   comm->reverse_comm_compute(this);
+
+  stress_sum = 0.0;
+  for (i = 0; i < ntotal; i++)
+    for (j = 0; j < 6; j++)
+      stress_sum += stress[i][j];
+  std::cout << "stress after revers_comm_compute: " << stress_sum << "\n";
+
 
   // zero virial of atoms not in group
   // only do this after comm since ghost contributions must be included
@@ -279,11 +290,6 @@ void ComputeStressAtom::compute_peratom()
       stress[i][5] = 0.0;
     }
 
-  stress_sum = 0.0;
-  for (i = 0; i < ntotal; i++)
-    for (j = 0; j < 6; j++)
-      stress_sum += stress[i][j];
-  std::cout << "stress after zeros: " << stress_sum << "\n";
 
   // include kinetic energy term for each atom in group
   // apply temperature bias is applicable
@@ -393,7 +399,9 @@ int ComputeStressAtom::pack_reverse_comm(int n, int first, double *buf)
 
   m = 0;
   last = first + n;
+  std::cout << first << "/" << last << " - ";
   for (i = first; i < last; i++) {
+
     buf[m++] = stress[i][0];
     buf[m++] = stress[i][1];
     buf[m++] = stress[i][2];
