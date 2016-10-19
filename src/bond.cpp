@@ -151,6 +151,8 @@ void Bond::ev_tally(int i, int j, int nlocal, int newton_bond,
 {
   double ebondhalf,v[6];
 
+  // std::cout << ")" << i << j;
+
   if (eflag_either) {
     if (eflag_global) {
       if (newton_bond) energy += ebond;
@@ -168,6 +170,7 @@ void Bond::ev_tally(int i, int j, int nlocal, int newton_bond,
   }
 
   if (vflag_either) {
+    // std::cout << " vflag_either";
     v[0] = delx*delx*fbond;
     v[1] = dely*dely*fbond;
     v[2] = delz*delz*fbond;
@@ -223,6 +226,7 @@ void Bond::ev_tally(int i, int j, int nlocal, int newton_bond,
         vatom[j][5] += 0.5*v[5];
       }
 
+      // std::cout << " vflag_atom";
       double **vel = atom->v;
       double f1[3];
       double f1v1, f2v2;
@@ -239,18 +243,20 @@ void Bond::ev_tally(int i, int j, int nlocal, int newton_bond,
       // heatflux_bond_x  = 0.5 * delx * (delx*fbond *vel[i][0] + dely*fbond*vel[i][1] + delz*fbond*vel[i][2]);
       // heatflux_bond_x += 0.5 * delx * (delx*fbond*vel[j][0] + dely*fbond*vel[j][1] + delz*fbond*vel[j][2]);
 
-      double heatflux_bond_lammps_x;
-      heatflux_bond_lammps_x = 0.0;
-      // std::cout << "\nheatflux_bond_lammps_x1: " << heatflux_bond_lammps_x;
-      heatflux_bond_lammps_x  = 0.5 * (v[0]*vel[i][0] + v[3]*vel[i][1] + v[4]*vel[i][2]);
-      heatflux_bond_lammps_x += 0.5 * (v[0]*vel[j][0] + v[3]*vel[j][1] + v[4]*vel[j][2]);
-      // heatflux_bond_lammps_x += 0.5*v[0]*vel[j][0] + vatom[j][3]*vel[j][1] + vatom[j][4]*vel[j][2];
-      std::cout << "\nheatflux_bond_lammps_x2: " << heatflux_bond_lammps_x;
-
-      std::cout << "\nheatflux_bond: " << 0.5 * (f1v1 - f2v2) * delx << "\n";
+      // double heatflux_bond_lammps_x;
+      // heatflux_bond_lammps_x = 0.0;
+      // // std::cout << "\nheatflux_bond_lammps_x1: " << heatflux_bond_lammps_x;
+      // heatflux_bond_lammps_x  = 0.5 * (v[0]*vel[i][0] + v[3]*vel[i][1] + v[4]*vel[i][2]);
+      // heatflux_bond_lammps_x += 0.5 * (v[0]*vel[j][0] + v[3]*vel[j][1] + v[4]*vel[j][2]);
+      // // heatflux_bond_lammps_x += 0.5*v[0]*vel[j][0] + vatom[j][3]*vel[j][1] + vatom[j][4]*vel[j][2];
+      // std::cout << "; lmp " << heatflux_bond_lammps_x;
+      //
+      // std::cout << "; us: " << 0.5 * (f1v1 - f2v2) * delx;
       // std::cout << heatflux_bond_lammps_x << "\n";
     }
   }
+
+  // std::cout << "\n";
   // if (hflag) {
 
   // }

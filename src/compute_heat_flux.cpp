@@ -26,6 +26,9 @@
 #include "group.h"
 #include "error.h"
 
+#include <iostream>
+#include <stdio.h>
+
 using namespace LAMMPS_NS;
 
 #define INVOKED_PERATOM 8
@@ -135,6 +138,7 @@ void ComputeHeatFlux::compute_vector()
 
   double jc[3] = {0.0,0.0,0.0};
   double jv[3] = {0.0,0.0,0.0};
+  double jve[3] = {0.0,0.0,0.0};
   double eng;
 
   for (int i = 0; i < nlocal; i++) {
@@ -143,12 +147,13 @@ void ComputeHeatFlux::compute_vector()
       jc[0] += eng*v[i][0];
       jc[1] += eng*v[i][1];
       jc[2] += eng*v[i][2];
-      jv[0] -= stress[i][0]*v[i][0] + stress[i][3]*v[i][1] +
-        stress[i][4]*v[i][2];
-      jv[1] -= stress[i][3]*v[i][0] + stress[i][1]*v[i][1] +
-        stress[i][5]*v[i][2];
-      jv[2] -= stress[i][4]*v[i][0] + stress[i][5]*v[i][1] +
-        stress[i][2]*v[i][2];
+      jv[0] -= stress[i][0]*v[i][0] + stress[i][3]*v[i][1] + stress[i][4]*v[i][2];
+      jv[1] -= stress[i][3]*v[i][0] + stress[i][1]*v[i][1] + stress[i][5]*v[i][2];
+      jv[2] -= stress[i][4]*v[i][0] + stress[i][5]*v[i][1] + stress[i][2]*v[i][2];
+    } else {
+      jve[0] -= stress[i][0]*v[i][0] + stress[i][3]*v[i][1] + stress[i][4]*v[i][2];
+      jve[1] -= stress[i][3]*v[i][0] + stress[i][1]*v[i][1] + stress[i][5]*v[i][2];
+      jve[2] -= stress[i][4]*v[i][0] + stress[i][5]*v[i][1] + stress[i][2]*v[i][2];
     }
   }
 
@@ -162,7 +167,13 @@ void ComputeHeatFlux::compute_vector()
   // sum across all procs
   // 1st 3 terms are total heat flux
   // 2nd 3 terms are just conductive portion
-
+  // std::cout << "JC/JV" << jc[0] << "/" << jv[0];
+  std::cout << "\nJVe=" << jve[0] << "/" << jve[1] << "/" << jve[2];
+  std::cout << "\nJV=" << jv[0] << "/" << jv[1] << "/" << jv[2];
   double data[6] = {jc[0]+jv[0],jc[1]+jv[1],jc[2]+jv[2],jc[0],jc[1],jc[2]};
   MPI_Allreduce(data,vector,6,MPI_DOUBLE,MPI_SUM,world);
+  // std::cout << "\nrE=" << vector[0] - vector[3] << "/" << vector[1] - vector[4] << "/" << vector[2] - vector[5];
+  // std::cout << "\n";
+
+
 }

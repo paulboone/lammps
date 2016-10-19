@@ -29,6 +29,10 @@
 #include "memory.h"
 #include "error.h"
 
+#include <iostream>
+#include <stdio.h>
+
+
 using namespace LAMMPS_NS;
 
 enum{NOBIAS,BIAS};
@@ -163,8 +167,9 @@ void ComputeStressAtom::compute_peratom()
   if (force->newton) ntotal += atom->nghost;
   if (force->kspace && force->kspace->tip4pflag) nkspace += atom->nghost;
 
-  // clear local stress array
+  double stress_sum;
 
+  // clear local stress array
   for (i = 0; i < ntotal; i++)
     for (j = 0; j < 6; j++)
       stress[i][j] = 0.0;
@@ -178,12 +183,24 @@ void ComputeStressAtom::compute_peratom()
         stress[i][j] += vatom[i][j];
   }
 
+  stress_sum = 0.0;
+  for (i = 0; i < ntotal; i++)
+    for (j = 0; j < 6; j++)
+      stress_sum += stress[i][j];
+  std::cout << "stress before bond: " << stress_sum << "\n";
+
   if (bondflag && force->bond) {
     double **vatom = force->bond->vatom;
     for (i = 0; i < nbond; i++)
       for (j = 0; j < 6; j++)
         stress[i][j] += vatom[i][j];
   }
+
+  stress_sum = 0.0;
+  for (i = 0; i < ntotal; i++)
+    for (j = 0; j < 6; j++)
+      stress_sum += stress[i][j];
+  std::cout << "stress after bond: " << stress_sum << "\n";
 
   if (angleflag && force->angle) {
     double **vatom = force->angle->vatom;
@@ -213,6 +230,12 @@ void ComputeStressAtom::compute_peratom()
         stress[i][j] += vatom[i][j];
   }
 
+  stress_sum = 0.0;
+  for (i = 0; i < ntotal; i++)
+    for (j = 0; j < 6; j++)
+      stress_sum += stress[i][j];
+  std::cout << "stress after all types: " << stress_sum << "\n";
+
   // add in per-atom contributions from relevant fixes
   // skip if vatom = NULL
   // possible during setup phase if fix has not initialized its vatom yet
@@ -229,6 +252,12 @@ void ComputeStressAtom::compute_peratom()
               stress[i][j] += vatom[i][j];
       }
   }
+
+  stress_sum = 0.0;
+  for (i = 0; i < ntotal; i++)
+    for (j = 0; j < 6; j++)
+      stress_sum += stress[i][j];
+  std::cout << "stress after fixes: " << stress_sum << "\n";
 
   // communicate ghost virials between neighbor procs
 
@@ -250,6 +279,12 @@ void ComputeStressAtom::compute_peratom()
       stress[i][5] = 0.0;
     }
 
+  stress_sum = 0.0;
+  for (i = 0; i < ntotal; i++)
+    for (j = 0; j < 6; j++)
+      stress_sum += stress[i][j];
+  std::cout << "stress after zeros: " << stress_sum << "\n";
+
   // include kinetic energy term for each atom in group
   // apply temperature bias is applicable
   // mvv2e converts mv^2 to energy
@@ -263,30 +298,28 @@ void ComputeStressAtom::compute_peratom()
 
     if (biasflag == NOBIAS) {
       if (rmass) {
-	for (i = 0; i < nlocal; i++)
-	  if (mask[i] & groupbit) {
-	    onemass = mvv2e * rmass[i];
-	    stress[i][0] += onemass*v[i][0]*v[i][0];
-	    stress[i][1] += onemass*v[i][1]*v[i][1];
-	    stress[i][2] += onemass*v[i][2]*v[i][2];
-	    stress[i][3] += onemass*v[i][0]*v[i][1];
-	    stress[i][4] += onemass*v[i][0]*v[i][2];
-	    stress[i][5] += onemass*v[i][1]*v[i][2];
-	  }
-
+      	for (i = 0; i < nlocal; i++)
+      	  if (mask[i] & groupbit) {
+      	    onemass = mvv2e * rmass[i];
+      	    stress[i][0] += onemass*v[i][0]*v[i][0];
+      	    stress[i][1] += onemass*v[i][1]*v[i][1];
+      	    stress[i][2] += onemass*v[i][2]*v[i][2];
+      	    stress[i][3] += onemass*v[i][0]*v[i][1];
+      	    stress[i][4] += onemass*v[i][0]*v[i][2];
+      	    stress[i][5] += onemass*v[i][1]*v[i][2];
+      	  }
       } else {
-	for (i = 0; i < nlocal; i++)
-	  if (mask[i] & groupbit) {
-	    onemass = mvv2e * mass[type[i]];
-	    stress[i][0] += onemass*v[i][0]*v[i][0];
-	    stress[i][1] += onemass*v[i][1]*v[i][1];
-	    stress[i][2] += onemass*v[i][2]*v[i][2];
-	    stress[i][3] += onemass*v[i][0]*v[i][1];
-	    stress[i][4] += onemass*v[i][0]*v[i][2];
-	    stress[i][5] += onemass*v[i][1]*v[i][2];
-	  }
+      	for (i = 0; i < nlocal; i++)
+      	  if (mask[i] & groupbit) {
+      	    onemass = mvv2e * mass[type[i]];
+      	    stress[i][0] += onemass*v[i][0]*v[i][0];
+      	    stress[i][1] += onemass*v[i][1]*v[i][1];
+      	    stress[i][2] += onemass*v[i][2]*v[i][2];
+      	    stress[i][3] += onemass*v[i][0]*v[i][1];
+      	    stress[i][4] += onemass*v[i][0]*v[i][2];
+      	    stress[i][5] += onemass*v[i][1]*v[i][2];
+      	  }
       }
-
     } else {
 
       // invoke temperature if it hasn't been already
@@ -296,39 +329,45 @@ void ComputeStressAtom::compute_peratom()
 	temperature->compute_scalar();
 
       if (rmass) {
-	for (i = 0; i < nlocal; i++)
-	  if (mask[i] & groupbit) {
-	    temperature->remove_bias(i,v[i]);
-	    onemass = mvv2e * rmass[i];
-	    stress[i][0] += onemass*v[i][0]*v[i][0];
-	    stress[i][1] += onemass*v[i][1]*v[i][1];
-	    stress[i][2] += onemass*v[i][2]*v[i][2];
-	    stress[i][3] += onemass*v[i][0]*v[i][1];
-	    stress[i][4] += onemass*v[i][0]*v[i][2];
-	    stress[i][5] += onemass*v[i][1]*v[i][2];
-	    temperature->restore_bias(i,v[i]);
-	  }
-
+      	for (i = 0; i < nlocal; i++)
+      	  if (mask[i] & groupbit) {
+      	    temperature->remove_bias(i,v[i]);
+      	    onemass = mvv2e * rmass[i];
+      	    stress[i][0] += onemass*v[i][0]*v[i][0];
+      	    stress[i][1] += onemass*v[i][1]*v[i][1];
+      	    stress[i][2] += onemass*v[i][2]*v[i][2];
+      	    stress[i][3] += onemass*v[i][0]*v[i][1];
+      	    stress[i][4] += onemass*v[i][0]*v[i][2];
+      	    stress[i][5] += onemass*v[i][1]*v[i][2];
+      	    temperature->restore_bias(i,v[i]);
+      	  }
       } else {
-	for (i = 0; i < nlocal; i++)
-	  if (mask[i] & groupbit) {
-	    temperature->remove_bias(i,v[i]);
-	    onemass = mvv2e * mass[type[i]];
-	    stress[i][0] += onemass*v[i][0]*v[i][0];
-	    stress[i][1] += onemass*v[i][1]*v[i][1];
-	    stress[i][2] += onemass*v[i][2]*v[i][2];
-	    stress[i][3] += onemass*v[i][0]*v[i][1];
-	    stress[i][4] += onemass*v[i][0]*v[i][2];
-	    stress[i][5] += onemass*v[i][1]*v[i][2];
-	    temperature->restore_bias(i,v[i]);
-	  }
+      	for (i = 0; i < nlocal; i++)
+      	  if (mask[i] & groupbit) {
+      	    temperature->remove_bias(i,v[i]);
+      	    onemass = mvv2e * mass[type[i]];
+      	    stress[i][0] += onemass*v[i][0]*v[i][0];
+      	    stress[i][1] += onemass*v[i][1]*v[i][1];
+      	    stress[i][2] += onemass*v[i][2]*v[i][2];
+      	    stress[i][3] += onemass*v[i][0]*v[i][1];
+      	    stress[i][4] += onemass*v[i][0]*v[i][2];
+      	    stress[i][5] += onemass*v[i][1]*v[i][2];
+      	    temperature->restore_bias(i,v[i]);
+      	  }
       }
     }
   }
 
+  stress_sum = 0.0;
+  for (i = 0; i < ntotal; i++)
+    for (j = 0; j < 6; j++)
+      stress_sum += stress[i][j];
+  std::cout << "stress post KE: " << stress_sum << "\n";
+
   // convert to stress*volume units = -pressure*volume
 
   double nktv2p = -force->nktv2p;
+  std::cout << "nktv2p: " << nktv2p << "\n";
   for (i = 0; i < nlocal; i++)
     if (mask[i] & groupbit) {
       stress[i][0] *= nktv2p;
@@ -338,6 +377,12 @@ void ComputeStressAtom::compute_peratom()
       stress[i][4] *= nktv2p;
       stress[i][5] *= nktv2p;
     }
+
+  stress_sum = 0.0;
+  for (i = 0; i < ntotal; i++)
+    for (j = 0; j < 6; j++)
+      stress_sum += stress[i][j];
+  std::cout << "stress AFTER: " << stress_sum << "\n";
 }
 
 /* ---------------------------------------------------------------------- */
