@@ -29,7 +29,7 @@ class Angle : protected Pointers {
   double energy;                  // accumulated energies
   double virial[6];               // accumlated virial
   double heatflux_angle[3];             // accumulated heat flux
-  double *eatom,**vatom;          // accumulated per-atom energy/virial
+  double *eatom,**vatom, **hatom;          // accumulated per-atom energy/virial
   unsigned int datamask;
   unsigned int datamask_ext;
 
@@ -61,7 +61,7 @@ class Angle : protected Pointers {
   int evflag;
   int eflag_either,eflag_global,eflag_atom;
   int vflag_either,vflag_global,vflag_atom;
-  int hflag;
+  int hflag_global, hflag_atom;
   int maxeatom,maxvatom,maxhfa;
 
   void ev_setup(int, int);

@@ -39,9 +39,10 @@ Angle::Angle(LAMMPS *lmp) : Pointers(lmp)
   allocated = 0;
   suffix_flag = Suffix::NONE;
 
-  maxeatom = maxvatom = 0;
+  maxeatom = maxvatom = maxhfa = 0;
   eatom = NULL;
   vatom = NULL;
+  hatom = NULL;
   setflag = NULL;
 
   datamask = ALL_MASK;
@@ -62,6 +63,7 @@ Angle::~Angle()
 
   memory->destroy(eatom);
   memory->destroy(vatom);
+  memory->destroy(hatom);
 }
 
 /* ----------------------------------------------------------------------
@@ -87,7 +89,9 @@ void Angle::ev_setup(int eflag, int vflag)
 {
   int i,n;
 
-  hflag = 1;
+  hflag_global = 1;
+  hflag_atom = 1;
+
   evflag = 1;
 
   eflag_either = eflag;
@@ -109,6 +113,11 @@ void Angle::ev_setup(int eflag, int vflag)
     maxvatom = atom->nmax;
     memory->destroy(vatom);
     memory->create(vatom,comm->nthreads*maxvatom,6,"angle:vatom");
+  }
+  if (hflag_atom && atom->nmax > maxhfa) {
+    maxhfa = atom->nmax;
+    memory->destroy(hatom);
+    memory->create(hatom,comm->nthreads*maxhfa,3,"angle:hatom");
   }
 
   // zero accumulators
@@ -132,10 +141,19 @@ void Angle::ev_setup(int eflag, int vflag)
       vatom[i][5] = 0.0;
     }
   }
-  if (hflag) {
+  if (hflag_global) {
     heatflux_angle[0] = 0.0;
     heatflux_angle[1] = 0.0;
     heatflux_angle[2] = 0.0;
+  }
+  if (hflag_atom) {
+    n = atom->nlocal;
+    if (force->newton_bond) n += atom->nghost;
+    for (i = 0; i < n; i++) {
+      hatom[i][0] = 0.0;
+      hatom[i][1] = 0.0;
+      hatom[i][2] = 0.0;
+    }
   }
 }
 
@@ -242,7 +260,7 @@ void Angle::ev_tally(int i, int j, int k, int nlocal, int newton_bond,
 
 
 
-  if (hflag) {
+  if (hflag_global || hflag_atom) {
     double **vel = atom->v;
     double f2[3];
     double f1v1, f2v2, f3v3;
@@ -260,25 +278,44 @@ void Angle::ev_tally(int i, int j, int k, int nlocal, int newton_bond,
     hf[1] = (f1v1 - f2v2) * dely1 + (f1v1 - f3v3) * (dely1 - dely2) + (f2v2 - f3v3) * (-dely2);
     hf[2] = (f1v1 - f2v2) * delz1 + (f1v1 - f3v3) * (delz1 - delz2) + (f2v2 - f3v3) * (-delz2);
 
-    if (newton_bond) {
-      heatflux_angle[0] += hf[0];
-      heatflux_angle[1] += hf[1];
-      heatflux_angle[2] += hf[2];
-    } else {
-      if (i < nlocal) {
-        heatflux_angle[0] += THIRD*(hf[0]);
-        heatflux_angle[1] += THIRD*(hf[1]);
-        heatflux_angle[2] += THIRD*(hf[2]);
+    if (hflag_global) {
+      if (newton_bond) {
+        heatflux_angle[0] += hf[0];
+        heatflux_angle[1] += hf[1];
+        heatflux_angle[2] += hf[2];
+      } else {
+        if (i < nlocal) {
+          heatflux_angle[0] += THIRD*(hf[0]);
+          heatflux_angle[1] += THIRD*(hf[1]);
+          heatflux_angle[2] += THIRD*(hf[2]);
+        }
+        if (j < nlocal) {
+          heatflux_angle[0] += THIRD*(hf[0]);
+          heatflux_angle[1] += THIRD*(hf[1]);
+          heatflux_angle[2] += THIRD*(hf[2]);
+        }
+        if (k < nlocal) {
+          heatflux_angle[0] += THIRD*(hf[0]);
+          heatflux_angle[1] += THIRD*(hf[1]);
+          heatflux_angle[2] += THIRD*(hf[2]);
+        }
       }
-      if (j < nlocal) {
-        heatflux_angle[0] += THIRD*(hf[0]);
-        heatflux_angle[1] += THIRD*(hf[1]);
-        heatflux_angle[2] += THIRD*(hf[2]);
+    }
+    if (hflag_atom) {
+      if (newton_bond || i < nlocal) {
+        hatom[i][0] += THIRD*(hf[0]);
+        hatom[i][1] += THIRD*(hf[1]);
+        hatom[i][2] += THIRD*(hf[2]);
       }
-      if (k < nlocal) {
-        heatflux_angle[0] += THIRD*(hf[0]);
-        heatflux_angle[1] += THIRD*(hf[1]);
-        heatflux_angle[2] += THIRD*(hf[2]);
+      if (newton_bond || j < nlocal) {
+        hatom[j][0] += THIRD*(hf[0]);
+        hatom[j][1] += THIRD*(hf[1]);
+        hatom[j][2] += THIRD*(hf[2]);
+      }
+      if (newton_bond || k < nlocal) {
+        hatom[k][0] += THIRD*(hf[0]);
+        hatom[k][1] += THIRD*(hf[1]);
+        hatom[k][2] += THIRD*(hf[2]);
       }
     }
   }
@@ -290,5 +327,6 @@ double Angle::memory_usage()
 {
   double bytes = comm->nthreads*maxeatom * sizeof(double);
   bytes += comm->nthreads*maxvatom*6 * sizeof(double);
+  bytes += comm->nthreads*maxhfa*3 * sizeof(double);
   return bytes;
 }

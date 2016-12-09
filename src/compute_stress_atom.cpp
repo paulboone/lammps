@@ -231,7 +231,6 @@ void ComputeStressAtom::compute_peratom()
   }
 
   // communicate ghost virials between neighbor procs
-
   if (force->newton || (force->kspace && force->kspace->tip4pflag))
     comm->reverse_comm_compute(this);
 

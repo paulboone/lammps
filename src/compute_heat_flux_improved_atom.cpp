@@ -11,7 +11,8 @@
    See the README file in the top-level LAMMPS directory.
 ------------------------------------------------------------------------- */
 
-#include "compute_heat_flux_torii.h"
+#include "compute_heat_flux_improved_atom.h"
+#include "atom.h"
 #include "angle.h"
 #include "bond.h"
 #include "force.h"
@@ -25,7 +26,7 @@ using namespace LAMMPS_NS;
 
 /* ---------------------------------------------------------------------- */
 
-ComputeHeatFluxTorii::ComputeHeatFluxTorii(LAMMPS *lmp, int narg, char **arg) :
+ComputeHeatFluxImprovedAtom::ComputeHeatFluxImprovedAtom(LAMMPS *lmp, int narg, char **arg) :
   Compute(lmp, narg, arg)
 {
   if (narg != 3) error->all(FLERR,"Illegal compute ke command");
@@ -39,13 +40,24 @@ ComputeHeatFluxTorii::ComputeHeatFluxTorii(LAMMPS *lmp, int narg, char **arg) :
 
 /* ---------------------------------------------------------------------- */
 
-void ComputeHeatFluxTorii::init(){}
-ComputeHeatFluxTorii::~ComputeHeatFluxTorii(){}
+void ComputeHeatFluxImprovedAtom::init(){}
+ComputeHeatFluxImprovedAtom::~ComputeHeatFluxImprovedAtom(){}
 
 /* ---------------------------------------------------------------------- */
 
-void ComputeHeatFluxTorii::compute_vector()
+void ComputeHeatFluxImprovedAtom::compute_vector()
 {
-  double * heatflux = force->angle->heatflux_angle;
+  double heatflux[2];
+
+  int nlocal = atom->nlocal;
+  int ntotal = nlocal;
+  if (force->newton) ntotal += atom->nghost;
+
+  // sum up angle forces
+  double **hatom = force->angle->hatom;
+  for (int i = 0; i < ntotal; i++)
+    for (int j = 0; j < 3; j++)
+      heatflux[j] += hatom[i][j];
+
   MPI_Allreduce(heatflux,vector,size_vector,MPI_DOUBLE,MPI_SUM,world);
 }
