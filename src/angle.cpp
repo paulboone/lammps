@@ -246,17 +246,41 @@ void Angle::ev_tally(int i, int j, int k, int nlocal, int newton_bond,
     double **vel = atom->v;
     double f2[3];
     double f1v1, f2v2, f3v3;
+    double hf[3];
+
     f2[0] = -(f3[0] + f1[0]);
     f2[1] = -(f3[1] + f1[1]);
     f2[2] = -(f3[2] + f1[2]);
+
     f1v1 = f1[0]*vel[i][0] + f1[1]*vel[i][1] + f1[2]*vel[i][2];
     f2v2 = f2[0]*vel[j][0] + f2[1]*vel[j][1] + f2[2]*vel[j][2];
     f3v3 = f3[0]*vel[k][0] + f3[1]*vel[k][1] + f3[2]*vel[k][2];
 
-    heatflux_angle[0] +=THIRD*((f1v1 - f2v2) * delx1 + (f1v1 - f3v3) * (delx1 - delx2) + (f2v2 - f3v3) * (-delx2));
-    heatflux_angle[1] += THIRD*((f1v1 - f2v2) * dely1 + (f1v1 - f3v3) * (dely1 - dely2) + (f2v2 - f3v3) * (-dely2));
-    heatflux_angle[2] += THIRD*((f1v1 - f2v2) * delz1 + (f1v1 - f3v3) * (delz1 - delz2) + (f2v2 - f3v3) * (-delz2));
-    // std::cout << i << ", " << hfa[0] << ", " << hfa[1] << ", " << hfa[2] << "\n";
+    hf[0] = (f1v1 - f2v2) * delx1 + (f1v1 - f3v3) * (delx1 - delx2) + (f2v2 - f3v3) * (-delx2);
+    hf[1] = (f1v1 - f2v2) * dely1 + (f1v1 - f3v3) * (dely1 - dely2) + (f2v2 - f3v3) * (-dely2);
+    hf[2] = (f1v1 - f2v2) * delz1 + (f1v1 - f3v3) * (delz1 - delz2) + (f2v2 - f3v3) * (-delz2);
+
+    if (newton_bond) {
+      heatflux_angle[0] += hf[0];
+      heatflux_angle[1] += hf[1];
+      heatflux_angle[2] += hf[2];
+    } else {
+      if (i < nlocal) {
+        heatflux_angle[0] += THIRD*(hf[0]);
+        heatflux_angle[1] += THIRD*(hf[1]);
+        heatflux_angle[2] += THIRD*(hf[2]);
+      }
+      if (j < nlocal) {
+        heatflux_angle[0] += THIRD*(hf[0]);
+        heatflux_angle[1] += THIRD*(hf[1]);
+        heatflux_angle[2] += THIRD*(hf[2]);
+      }
+      if (k < nlocal) {
+        heatflux_angle[0] += THIRD*(hf[0]);
+        heatflux_angle[1] += THIRD*(hf[1]);
+        heatflux_angle[2] += THIRD*(hf[2]);
+      }
+    }
   }
 }
 
