@@ -30,6 +30,14 @@ class ComputeHeatFluxImprovedAtom : public Compute {
   ~ComputeHeatFluxImprovedAtom();
   void init();
   void compute_vector();
+
+  int pack_reverse_comm(int, int, double *);
+  void unpack_reverse_comm(int, int *, double *);
+  double memory_usage();
+
+  int nmax;
+  double **hf_atom;
+
 };
 
 }
