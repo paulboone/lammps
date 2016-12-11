@@ -23,6 +23,10 @@
 #include "memory.h"
 #include "error.h"
 
+#include <iostream>
+#include <stdio.h>
+
+
 using namespace LAMMPS_NS;
 
 #define BONDDELTA 10000
@@ -299,6 +303,8 @@ void Neighbor::angle_all()
         nanglelist++;
       }
     }
+
+  std::cout << "nanglelist = " << nanglelist << "\n";
 
   if (cluster_check) angle_check();
   if (lostbond == IGNORE) return;

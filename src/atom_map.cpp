@@ -17,6 +17,8 @@
 #include "memory.h"
 #include "error.h"
 
+#include <iostream>
+
 using namespace LAMMPS_NS;
 
 #define EXTRA 1000

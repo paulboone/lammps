@@ -75,30 +75,31 @@ void ComputeHeatFluxImprovedAtom::compute_vector()
     for (j = 0; j < 3; j++)
       hf_atom[i][j] = hatom[i][j];
 
-  heatflux[0] = 0.0;
-  heatflux[1] = 0.0;
-  heatflux[2] = 0.0;
-  for (i = 0; i < nlocal; i++)
-    for (j = 0; j < 3; j++)
-      heatflux[j] += hf_atom[i][j];
-
-  // std::cout << force->angle->ntmp0 << ", " << force->angle->ntmp1 << ", "  << force->angle->ntmp2 << ", "  << force->angle->ntmp3 << "\n";
-  std::cout << heatflux[0] << ", " << heatflux[1] << ", " << heatflux[2] << "\n";
+  // heatflux[0] = 0.0;
+  // heatflux[1] = 0.0;
+  // heatflux[2] = 0.0;
+  // for (i = 0; i < nlocal; i++)
+  //   for (j = 0; j < 3; j++)
+  //     heatflux[j] += hf_atom[i][j];
+  //
+  // // std::cout << force->angle->ntmp0 << ", " << force->angle->ntmp1 << ", "  << force->angle->ntmp2 << ", "  << force->angle->ntmp3 << "\n";
+  // std::cout << heatflux[0] << ", " << heatflux[1] << ", " << heatflux[2] << "\n";
 
 
   // communicate ghost fluxes between neighbor procs
   if (force->newton)
     comm->reverse_comm_compute(this);
 
-
   heatflux[0] = 0.0;
   heatflux[1] = 0.0;
   heatflux[2] = 0.0;
-  for (i = 0; i < nlocal; i++)
-    for (j = 0; j < 3; j++)
-      heatflux[j] += hf_atom[i][j];
-  std::cout << heatflux[0] << ", " << heatflux[1] << ", " << heatflux[2] << "\n";
 
+  double **v = atom->v;
+  for (i = 0; i < nlocal; i++) {
+    heatflux[0] += hatom[i][0] * v[i][0] + hatom[i][1] * v[i][1] + hatom[i][2] * v[i][2];
+    heatflux[1] += hatom[i][3] * v[i][0] + hatom[i][4] * v[i][1] + hatom[i][5] * v[i][2];
+    heatflux[2] += hatom[i][6] * v[i][0] + hatom[i][7] * v[i][1] + hatom[i][8] * v[i][2];
+  }
 
   MPI_Allreduce(heatflux,vector,size_vector,MPI_DOUBLE,MPI_SUM,world);
 }

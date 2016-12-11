@@ -87,7 +87,7 @@ void Angle::init()
 
 void Angle::ev_setup(int eflag, int vflag)
 {
-  int i,n;
+  int i,n,j;
 
   hflag_global = 1;
   hflag_atom = 1;
@@ -117,7 +117,7 @@ void Angle::ev_setup(int eflag, int vflag)
   if (hflag_atom && atom->nmax > maxhfa) {
     maxhfa = atom->nmax;
     memory->destroy(hatom);
-    memory->create(hatom,comm->nthreads*maxhfa,3,"angle:hatom");
+    memory->create(hatom,comm->nthreads*maxhfa,9,"angle:hatom");
   }
 
   // zero accumulators
@@ -150,11 +150,11 @@ void Angle::ev_setup(int eflag, int vflag)
     n = atom->nlocal;
     if (force->newton_bond) n += atom->nghost;
     for (i = 0; i < n; i++) {
-      hatom[i][0] = 0.0;
-      hatom[i][1] = 0.0;
-      hatom[i][2] = 0.0;
+      for (j = 0; j < 9; j++) {}
+        hatom[i][j] = 0.0;
     }
   }
+  ntmp0 = ntmp1 = ntmp2 = ntmp3 = 0;
 }
 
 /* ----------------------------------------------------------------------
@@ -167,6 +167,17 @@ void Angle::ev_tally(int i, int j, int k, int nlocal, int newton_bond,
                      double delx1, double dely1, double delz1,
                      double delx2, double dely2, double delz2)
 {
+  int tmpi = 0;
+  if (i < nlocal) tmpi++;
+  if (j < nlocal) tmpi++;
+  if (k < nlocal) tmpi++;
+
+  if (tmpi == 0) ntmp0++;
+  if (tmpi == 1) ntmp1++;
+  if (tmpi == 2) ntmp2++;
+  if (tmpi == 3) ntmp3++;
+  ntmp0 = nlocal;
+
   double eanglethird,v[6];
 
   if (eflag_either) {
@@ -274,9 +285,55 @@ void Angle::ev_tally(int i, int j, int k, int nlocal, int newton_bond,
     f2v2 = f2[0]*vel[j][0] + f2[1]*vel[j][1] + f2[2]*vel[j][2];
     f3v3 = f3[0]*vel[k][0] + f3[1]*vel[k][1] + f3[2]*vel[k][2];
 
+    // f1v1 = f1[0]*1 + f1[1]*1 + f1[2]*1;
+    // f2v2 = f2[0]*2 + f2[1]*2 + f2[2]*2;
+    // f3v3 = f3[0]*3 + f3[1]*3 + f3[2]*3;
+
+
     hf[0] = (f1v1 - f2v2) * delx1 + (f1v1 - f3v3) * (delx1 - delx2) + (f2v2 - f3v3) * (-delx2);
     hf[1] = (f1v1 - f2v2) * dely1 + (f1v1 - f3v3) * (dely1 - dely2) + (f2v2 - f3v3) * (-dely2);
     hf[2] = (f1v1 - f2v2) * delz1 + (f1v1 - f3v3) * (delz1 - delz2) + (f2v2 - f3v3) * (-delz2);
+
+    if (0) { //CHECK GHOST VELOCITIES
+      int * sametag = atom->sametag;
+      int p,q;
+      p = i;
+      q = i;
+      while (sametag[q] >= 0) {
+        q = sametag[q];
+        if (vel[p][0] != vel[q][0] || vel[p][1] != vel[q][1] || vel[p][2] != vel[q][2])
+          std::cout << p << "/" << q << ": " << vel[p][0] << "/" << vel[q][0] << ", " << vel[p][1] << "/" << vel[q][1] << ", " << vel[p][2] << "/" << vel[q][2] << "\n";
+      }
+
+      p = j;
+      q = j;
+      while (sametag[q] >= 0) {
+        q = sametag[q];
+        if (vel[p][0] != vel[q][0] || vel[p][1] != vel[q][1] || vel[p][2] != vel[q][2])
+          std::cout << p << "/" << q << ": " << vel[p][0] << "/" << vel[q][0] << ", " << vel[p][1] << "/" << vel[q][1] << ", " << vel[p][2] << "/" << vel[q][2] << "\n";
+      }
+      p = k;
+      q = k;
+      while (sametag[q] >= 0) {
+        q = sametag[q];
+        if (vel[p][0] != vel[q][0] || vel[p][1] != vel[q][1] || vel[p][2] != vel[q][2])
+          std::cout << p << "/" << q << ": " << vel[p][0] << "/" << vel[q][0] << ", " << vel[p][1] << "/" << vel[q][1] << ", " << vel[p][2] << "/" << vel[q][2] << "\n";
+      }
+    }
+    // hf[0] = (2*delx1 - delx2)*f1[0]
+    // hf[1] = (f1v1 - f2v2) * dely1 + (f1v1 - f3v3) * (dely1 - dely2) + (f2v2 - f3v3) * (-dely2);
+    // hf[2] = (f1v1 - f2v2) * delz1 + (f1v1 - f3v3) * (delz1 - delz2) + (f2v2 - f3v3) * (-delz2);
+    // hf[4] = (f1v1 - f2v2) * delx1 + (f1v1 - f3v3) * (delx1 - delx2) + (f2v2 - f3v3) * (-delx2);
+    // hf[5] = (f1v1 - f2v2) * dely1 + (f1v1 - f3v3) * (dely1 - dely2) + (f2v2 - f3v3) * (-dely2);
+    // hf[6] = (f1v1 - f2v2) * delz1 + (f1v1 - f3v3) * (delz1 - delz2) + (f2v2 - f3v3) * (-delz2);
+    // hf[7] = (f1v1 - f2v2) * delx1 + (f1v1 - f3v3) * (delx1 - delx2) + (f2v2 - f3v3) * (-delx2);
+    // hf[8] = (f1v1 - f2v2) * dely1 + (f1v1 - f3v3) * (dely1 - dely2) + (f2v2 - f3v3) * (-dely2);
+    // hf[9] = (f1v1 - f2v2) * delz1 + (f1v1 - f3v3) * (delz1 - delz2) + (f2v2 - f3v3) * (-delz2);
+
+
+    // hf[0] = 1;
+    // hf[1] = 2;
+    // hf[2] = 3;
 
     if (hflag_global) {
       if (newton_bond) {
@@ -303,19 +360,37 @@ void Angle::ev_tally(int i, int j, int k, int nlocal, int newton_bond,
     }
     if (hflag_atom) {
       if (newton_bond || i < nlocal) {
-        hatom[i][0] += THIRD*(hf[0]);
-        hatom[i][1] += THIRD*(hf[1]);
-        hatom[i][2] += THIRD*(hf[2]);
+        hatom[i][0] += THIRD*((2*delx1 - delx2) * f1[0]);
+        hatom[i][1] += THIRD*((2*delx1 - delx2) * f1[1]);
+        hatom[i][2] += THIRD*((2*delx1 - delx2) * f1[2]);
+        hatom[i][3] += THIRD*((2*dely1 - dely2) * f1[0]);
+        hatom[i][4] += THIRD*((2*dely1 - dely2) * f1[1]);
+        hatom[i][5] += THIRD*((2*dely1 - dely2) * f1[2]);
+        hatom[i][6] += THIRD*((2*delz1 - delz2) * f1[0]);
+        hatom[i][7] += THIRD*((2*delz1 - delz2) * f1[1]);
+        hatom[i][8] += THIRD*((2*delz1 - delz2) * f1[2]);
       }
       if (newton_bond || j < nlocal) {
-        hatom[j][0] += THIRD*(hf[0]);
-        hatom[j][1] += THIRD*(hf[1]);
-        hatom[j][2] += THIRD*(hf[2]);
+        hatom[j][0] += THIRD*((delx1 + delx2) * (f1[0] + f3[0]));
+        hatom[j][1] += THIRD*((delx1 + delx2) * (f1[1] + f3[1]));
+        hatom[j][2] += THIRD*((delx1 + delx2) * (f1[2] + f3[2]));
+        hatom[j][3] += THIRD*((dely1 + dely2) * (f1[0] + f3[0]));
+        hatom[j][4] += THIRD*((dely1 + dely2) * (f1[1] + f3[1]));
+        hatom[j][5] += THIRD*((dely1 + dely2) * (f1[2] + f3[2]));
+        hatom[j][6] += THIRD*((delz1 + delz2) * (f1[0] + f3[0]));
+        hatom[j][7] += THIRD*((delz1 + delz2) * (f1[1] + f3[1]));
+        hatom[j][8] += THIRD*((delz1 + delz2) * (f1[2] + f3[2]));
       }
       if (newton_bond || k < nlocal) {
-        hatom[k][0] += THIRD*(hf[0]);
-        hatom[k][1] += THIRD*(hf[1]);
-        hatom[k][2] += THIRD*(hf[2]);
+        hatom[k][0] += THIRD*((2*delx2 - delx1) * f3[0]);
+        hatom[k][1] += THIRD*((2*delx2 - delx1) * f3[1]);
+        hatom[k][2] += THIRD*((2*delx2 - delx1) * f3[2]);
+        hatom[k][3] += THIRD*((2*dely2 - dely1) * f3[0]);
+        hatom[k][4] += THIRD*((2*dely2 - dely1) * f3[1]);
+        hatom[k][5] += THIRD*((2*dely2 - dely1) * f3[2]);
+        hatom[k][6] += THIRD*((2*delz2 - delz1) * f3[0]);
+        hatom[k][7] += THIRD*((2*delz2 - delz1) * f3[1]);
+        hatom[k][8] += THIRD*((2*delz2 - delz1) * f3[2]);
       }
     }
   }
@@ -327,6 +402,6 @@ double Angle::memory_usage()
 {
   double bytes = comm->nthreads*maxeatom * sizeof(double);
   bytes += comm->nthreads*maxvatom*6 * sizeof(double);
-  bytes += comm->nthreads*maxhfa*3 * sizeof(double);
+  bytes += comm->nthreads*maxhfa*9 * sizeof(double);
   return bytes;
 }

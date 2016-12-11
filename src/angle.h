@@ -38,6 +38,8 @@ class Angle : protected Pointers {
   unsigned int datamask_read,datamask_modify;
   int copymode;
 
+  int ntmp0,ntmp1,ntmp2,ntmp3;
+
   Angle(class LAMMPS *);
   virtual ~Angle();
   virtual void init();
@@ -67,6 +69,8 @@ class Angle : protected Pointers {
   void ev_setup(int, int);
   void ev_tally(int, int, int, int, int, double, double *, double *,
                 double, double, double, double, double, double);
+
+
 };
 
 }

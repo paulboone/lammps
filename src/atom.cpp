@@ -37,6 +37,8 @@
 #include "memory.h"
 #include "error.h"
 
+#include <iostream>
+
 using namespace LAMMPS_NS;
 using namespace MathConst;
 
@@ -800,6 +802,7 @@ void Atom::deallocate_topology()
 void Atom::data_atoms(int n, char *buf, tagint id_offset, int type_offset,
                       int shiftflag, double *shift)
 {
+  int tmpcount = 0;
   int m,xptr,iptr;
   imageint imagedata;
   double xdata[3],lamda[3];
@@ -922,6 +925,7 @@ void Atom::data_atoms(int n, char *buf, tagint id_offset, int type_offset,
         coord[1] >= sublo[1] && coord[1] < subhi[1] &&
         coord[2] >= sublo[2] && coord[2] < subhi[2]) {
       avec->data_atom(xdata,imagedata,values);
+      tmpcount++;
       if (id_offset) tag[nlocal-1] += id_offset;
       if (type_offset) {
         type[nlocal-1] += type_offset;
@@ -932,6 +936,7 @@ void Atom::data_atoms(int n, char *buf, tagint id_offset, int type_offset,
 
     buf = next + 1;
   }
+  std::cout << "data_atoms count = " << tmpcount << "\n";
 
   delete [] values;
 }
@@ -1043,6 +1048,7 @@ void Atom::data_bonds(int n, char *buf, int *count, tagint id_offset,
 void Atom::data_angles(int n, char *buf, int *count, tagint id_offset,
                        int type_offset)
 {
+  int tmpcount = 0;
   int m,tmp,itype;
   tagint atom1,atom2,atom3;
   char *next;
@@ -1069,6 +1075,7 @@ void Atom::data_angles(int n, char *buf, int *count, tagint id_offset,
     if ((m = map(atom2)) >= 0) {
       if (count) count[m]++;
       else {
+        tmpcount++;
         angle_type[m][num_angle[m]] = itype;
         angle_atom1[m][num_angle[m]] = atom1;
         angle_atom2[m][num_angle[m]] = atom2;
@@ -1080,6 +1087,7 @@ void Atom::data_angles(int n, char *buf, int *count, tagint id_offset,
       if ((m = map(atom1)) >= 0) {
         if (count) count[m]++;
         else {
+          tmpcount++;
           angle_type[m][num_angle[m]] = itype;
           angle_atom1[m][num_angle[m]] = atom1;
           angle_atom2[m][num_angle[m]] = atom2;
@@ -1090,6 +1098,7 @@ void Atom::data_angles(int n, char *buf, int *count, tagint id_offset,
       if ((m = map(atom3)) >= 0) {
         if (count) count[m]++;
         else {
+          tmpcount++;
           angle_type[m][num_angle[m]] = itype;
           angle_atom1[m][num_angle[m]] = atom1;
           angle_atom2[m][num_angle[m]] = atom2;
@@ -1100,6 +1109,9 @@ void Atom::data_angles(int n, char *buf, int *count, tagint id_offset,
     }
     buf = next + 1;
   }
+
+  std::cout << "newton_bond = " << newton_bond << "\n";
+  std::cout << "angles created = " << tmpcount << "\n";
 }
 
 /* ----------------------------------------------------------------------
@@ -1353,7 +1365,7 @@ void Atom::data_bodies(int n, char *buf, AtomVecBody *avec_body,
 
     ninteger = force->inumeric(FLERR,strtok(NULL," \t\n\r\f"));
     ndouble = force->inumeric(FLERR,strtok(NULL," \t\n\r\f"));
-    
+
     if ((m = map(tagdata)) >= 0) {
       if (ninteger > maxint) {
 	delete [] ivalues;
@@ -1365,14 +1377,14 @@ void Atom::data_bodies(int n, char *buf, AtomVecBody *avec_body,
 	maxdouble = ndouble;
 	dvalues = new double[maxdouble];
       }
-      
+
       for (j = 0; j < ninteger; j++)
 	ivalues[j] = force->inumeric(FLERR,strtok(NULL," \t\n\r\f"));
       for (j = 0; j < ndouble; j++)
 	dvalues[j] = force->numeric(FLERR,strtok(NULL," \t\n\r\f"));
-      
+
       avec_body->data_body(m,ninteger,ndouble,ivalues,dvalues);
-      
+
     } else {
       nvalues = ninteger + ndouble;    // number of values to skip
       for (j = 0; j < nvalues; j++)
@@ -1481,7 +1493,7 @@ void Atom::check_mass()
 {
   if (mass == NULL) return;
   for (int itype = 1; itype <= ntypes; itype++)
-    if (mass_setflag[itype] == 0) 
+    if (mass_setflag[itype] == 0)
       error->all(FLERR,"Not all per-type masses are set");
 }
 
@@ -1616,7 +1628,7 @@ void Atom::add_molecule_atom(Molecule *onemol, int iatom,
 				 onemol->ibodyparams,onemol->dbodyparams);
     onemol->avec_body->set_quat(ilocal,onemol->quat_external);
   }
-  
+
   if (molecular != 1) return;
 
   // add bond topology info
