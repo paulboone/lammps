@@ -26,6 +26,8 @@
 #include "group.h"
 #include "error.h"
 
+#include <iostream>
+
 using namespace LAMMPS_NS;
 
 #define INVOKED_PERATOM 8
@@ -136,19 +138,34 @@ void ComputeHeatFlux::compute_vector()
   double jc[3] = {0.0,0.0,0.0};
   double jv[3] = {0.0,0.0,0.0};
   double eng;
+  double sadd = 0.0;
+
+  std::cout.precision(17) ;
+
+  // for (int j = 0; j < 6; j++)
+  //   std::cout << "STRESS! " << 0 << j << ": " << stress[0][j] << "\n";
 
   for (int i = 0; i < nlocal; i++) {
+    std::cout << "\nATOM " << i << ": \n";
+    std::cout << "STRESS:";
+    for (int j = 0; j < 6; j++)
+      std::cout << " " << stress[i][j];
+    std::cout << "\n";
+
     if (mask[i] & groupbit) {
       eng = pe[i] + ke[i];
       jc[0] += eng*v[i][0];
       jc[1] += eng*v[i][1];
       jc[2] += eng*v[i][2];
-      jv[0] -= stress[i][0]*v[i][0] + stress[i][3]*v[i][1] +
-        stress[i][4]*v[i][2];
-      jv[1] -= stress[i][3]*v[i][0] + stress[i][1]*v[i][1] +
-        stress[i][5]*v[i][2];
-      jv[2] -= stress[i][4]*v[i][0] + stress[i][5]*v[i][1] +
-        stress[i][2]*v[i][2];
+      jv[0] -= stress[i][0]*v[i][0] + stress[i][3]*v[i][1] + stress[i][4]*v[i][2];
+      sadd =   stress[i][3]*v[i][0] + stress[i][1]*v[i][1] + stress[i][5]*v[i][2];
+      std::cout << "SADD: " << sadd << "\n";
+      jv[1] -= stress[i][3]*v[i][0] + stress[i][1]*v[i][1] + stress[i][5]*v[i][2];
+      sadd = stress[i][4]*v[i][0] + stress[i][5]*v[i][1] + stress[i][2]*v[i][2];
+      std::cout << "SADD: " << sadd << "\n";
+      jv[2] -= sadd;
+      std::cout << "V[" << i << "]: " << v[i][0] << "/" << v[i][1] << "/" << v[i][2] << "\n";
+      std::cout << "JV: " << jv[0] << "/" << jv[1] << "/" << jv[2] << "\n";
     }
   }
 
@@ -159,10 +176,13 @@ void ComputeHeatFlux::compute_vector()
   jv[1] /= nktv2p;
   jv[2] /= nktv2p;
 
+
+  std::cout << "\n\nJVf: " << jv[0] << "/" << jv[1] << "/" << jv[2] << "\n";
   // sum across all procs
   // 1st 3 terms are total heat flux
   // 2nd 3 terms are just conductive portion
 
-  double data[6] = {jc[0]+jv[0],jc[1]+jv[1],jc[2]+jv[2],jc[0],jc[1],jc[2]};
+  std::cout << "JVc: " << jc[0]+jv[0] << "/" << jc[1]+jv[1] << "/" << jc[2]+jv[2] << "\n";
+  double data[6] = {jv[0],jv[1],jv[2],jc[0],jc[1],jc[2]};
   MPI_Allreduce(data,vector,6,MPI_DOUBLE,MPI_SUM,world);
 }

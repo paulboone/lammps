@@ -28,6 +28,7 @@
 #include "fix.h"
 #include "memory.h"
 #include "error.h"
+#include <iostream>
 
 using namespace LAMMPS_NS;
 
@@ -213,6 +214,10 @@ void ComputeStressAtom::compute_peratom()
         stress[i][j] += vatom[i][j];
   }
 
+  // for (int j = 0; j < 6; j++)
+  //   std::cout << "STRESS 1! " << 0 << j << ": " << stress[0][j] << "\n";
+
+
   // add in per-atom contributions from relevant fixes
   // skip if vatom = NULL
   // possible during setup phase if fix has not initialized its vatom yet
@@ -252,6 +257,10 @@ void ComputeStressAtom::compute_peratom()
   // include kinetic energy term for each atom in group
   // apply temperature bias is applicable
   // mvv2e converts mv^2 to energy
+
+  // for (int j = 0; j < 6; j++)
+  //   std::cout << "STRESS 2! " << 0 << j << ": " << stress[0][j] << "\n";
+
 
   if (keflag) {
     double **v = atom->v;
@@ -325,6 +334,10 @@ void ComputeStressAtom::compute_peratom()
     }
   }
 
+  // for (int j = 0; j < 6; j++)
+  //   std::cout << "STRESS 3! " << 0 << j << ": " << stress[0][j] << "\n";
+
+
   // convert to stress*volume units = -pressure*volume
 
   double nktv2p = -force->nktv2p;
@@ -337,6 +350,10 @@ void ComputeStressAtom::compute_peratom()
       stress[i][4] *= nktv2p;
       stress[i][5] *= nktv2p;
     }
+
+  // for (int j = 0; j < 6; j++)
+  //   std::cout << "STRESS 4! " << 0 << j << ": " << stress[0][j] << "\n";
+
 }
 
 /* ---------------------------------------------------------------------- */

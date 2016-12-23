@@ -61,7 +61,7 @@ void ComputeHeatFluxImprovedAtom::compute_vector()
   if (atom->nmax > nmax) {
     memory->destroy(hf_atom);
     nmax = atom->nmax;
-    memory->create(hf_atom,nmax,3,"heat/flux_improved_atom:hf_atom");
+    memory->create(hf_atom,nmax,9,"heat/flux_improved_atom:hf_atom");
     array_atom = hf_atom;
   }
 
@@ -69,11 +69,18 @@ void ComputeHeatFluxImprovedAtom::compute_vector()
   int ntotal = nlocal;
   if (force->newton) ntotal += atom->nghost;
 
+  for (i = 0; i < ntotal; i++)
+    for (j = 0; j < 9; j++)
+      hf_atom[i][j] = 0.0;
+
   // sum up angle forces
   hatom = force->angle->hatom;
   for (i = 0; i < ntotal; i++)
-    for (j = 0; j < 3; j++)
-      hf_atom[i][j] = hatom[i][j];
+    for (j = 0; j < 9; j++)
+      hf_atom[i][j] += hatom[i][j];
+
+  // for (i=0; i<ntotal; i++)
+  //   std::cout << "hf_atom[" << i << "]: " << hf_atom[i][0] << "/" << hf_atom[i][1] << "/" << hf_atom[i][2] << "\n";
 
   // heatflux[0] = 0.0;
   // heatflux[1] = 0.0;
@@ -90,17 +97,35 @@ void ComputeHeatFluxImprovedAtom::compute_vector()
   if (force->newton)
     comm->reverse_comm_compute(this);
 
+  // for (i=0; i<ntotal; i++)
+  //   std::cout << "hf_atom[" << i << "]: " << hf_atom[i][0] << "/" << hf_atom[i][1] << "/" << hf_atom[i][2] << "\n";
+  // for (i=0; i<ntotal; i++)
+  //   std::cout << "hatom[" << i << "]: " << hatom[i][0] << "/" << hatom[i][1] << "/" << hatom[i][2] << "\n";
+
+
+  // double heatflu2[3];
   heatflux[0] = 0.0;
   heatflux[1] = 0.0;
   heatflux[2] = 0.0;
+  // heatflu2[0] = 0.0;
+  // heatflu2[1] = 0.0;
+  // heatflu2[2] = 0.0;
 
   double **v = atom->v;
+
+
   for (i = 0; i < nlocal; i++) {
-    heatflux[0] += hatom[i][0] * v[i][0] + hatom[i][1] * v[i][1] + hatom[i][2] * v[i][2];
-    heatflux[1] += hatom[i][3] * v[i][0] + hatom[i][4] * v[i][1] + hatom[i][5] * v[i][2];
-    heatflux[2] += hatom[i][6] * v[i][0] + hatom[i][7] * v[i][1] + hatom[i][8] * v[i][2];
+    // std::cout << "CHECKS: " << hatom[i][3] - hf_atom[i][3] << " _ "  << hatom[i][4] - hf_atom[i][4] << " _ "  << hatom[i][5] - hf_atom[i][5] << "\n";
+    heatflux[0] += hf_atom[i][0] * v[i][0] + hf_atom[i][1] * v[i][1] + hf_atom[i][2] * v[i][2];
+    heatflux[1] += hf_atom[i][3] * v[i][0] + hf_atom[i][4] * v[i][1] + hf_atom[i][5] * v[i][2];
+    heatflux[2] += hf_atom[i][6] * v[i][0] + hf_atom[i][7] * v[i][1] + hf_atom[i][8] * v[i][2];
+    // heatflu2[0] += hatom[i][0] * v[i][0] + hatom[i][1] * v[i][1] + hatom[i][2] * v[i][2];
+    // heatflu2[1] += hatom[i][3] * v[i][0] + hatom[i][4] * v[i][1] + hatom[i][5] * v[i][2];
+    // heatflu2[2] += hatom[i][6] * v[i][0] + hatom[i][7] * v[i][1] + hatom[i][8] * v[i][2];
   }
 
+  // std::cout << "heatflux: " << heatflux[0] << "/" << heatflux[1] << "/" << heatflux[2] << "\n";
+  // std::cout << "heatflu2: " << heatflu2[0] << "/" << heatflu2[1] << "/" << heatflu2[2] << "\n";
   MPI_Allreduce(heatflux,vector,size_vector,MPI_DOUBLE,MPI_SUM,world);
 }
 
@@ -116,6 +141,12 @@ int ComputeHeatFluxImprovedAtom::pack_reverse_comm(int n, int first, double *buf
     buf[m++] = hf_atom[i][0];
     buf[m++] = hf_atom[i][1];
     buf[m++] = hf_atom[i][2];
+    buf[m++] = hf_atom[i][3];
+    buf[m++] = hf_atom[i][4];
+    buf[m++] = hf_atom[i][5];
+    buf[m++] = hf_atom[i][6];
+    buf[m++] = hf_atom[i][7];
+    buf[m++] = hf_atom[i][8];
   }
 
   std::cout << "PACK: " << first << " to " << last << "\n";
@@ -131,12 +162,19 @@ void ComputeHeatFluxImprovedAtom::unpack_reverse_comm(int n, int *list, double *
   m = 0;
   for (i = 0; i < n; i++) {
     j = list[i];
-    if (j < 3584) tcnt++;
+    std::cout << "UNPACK BEF: " << j << " " << hf_atom[j][0] << "/" << hf_atom[j][1] << "/" << hf_atom[j][2] << "\n";
     hf_atom[j][0] += buf[m++];
     hf_atom[j][1] += buf[m++];
     hf_atom[j][2] += buf[m++];
+    hf_atom[j][3] += buf[m++];
+    hf_atom[j][4] += buf[m++];
+    hf_atom[j][5] += buf[m++];
+    hf_atom[j][6] += buf[m++];
+    hf_atom[j][7] += buf[m++];
+    hf_atom[j][8] += buf[m++];
+    std::cout << "UNPACK AFT: " << j << " " << hf_atom[j][0] << "/" << hf_atom[j][1] << "/" << hf_atom[j][2] << "\n";
   }
-  std::cout << "UNPACK INTO NONGHOST: " << tcnt << "\n";
+  std::cout << "UNPACK INTO NONGHOST: " << n << "\n";
 }
 
 /* ----------------------------------------------------------------------

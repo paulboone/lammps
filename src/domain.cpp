@@ -41,6 +41,8 @@
 #include "memory.h"
 #include "error.h"
 
+#include <iostream>
+
 using namespace LAMMPS_NS;
 using namespace MathConst;
 
@@ -521,6 +523,8 @@ void Domain::pbc()
     period = prd_lamda;
   }
 
+  std::cout << "PERIOD: " << period[0] << "/" << period[1] << "/" << period[2] << "\n";
+
   // apply PBC to each owned atom
 
   for (i = 0; i < nlocal; i++) {
@@ -624,7 +628,7 @@ int Domain::inside(double* x)
 	x[1] < lo[1] || x[1] >= hi[1] ||
 	x[2] < lo[2] || x[2] >= hi[2]) return 0;
     else return 1;
-    
+
   } else {
     lo = boxlo_lamda;
     hi = boxhi_lamda;
@@ -635,7 +639,7 @@ int Domain::inside(double* x)
 	lamda[1] < lo[1] || lamda[1] >= hi[1] ||
 	lamda[2] < lo[2] || lamda[2] >= hi[2]) return 0;
     else return 1;
-    
+
   }
 
 }
@@ -1926,5 +1930,3 @@ void Domain::lamda_box_corners(double *lo, double *hi)
   corners[7][0] = hi[0]; corners[7][1] = hi[1]; corners[7][2] = subhi_lamda[2];
   lamda2x(corners[7],corners[7]);
 }
-
-

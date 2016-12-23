@@ -150,8 +150,9 @@ void Angle::ev_setup(int eflag, int vflag)
     n = atom->nlocal;
     if (force->newton_bond) n += atom->nghost;
     for (i = 0; i < n; i++) {
-      for (j = 0; j < 9; j++) {}
+      for (j = 0; j < 9; j++) {
         hatom[i][j] = 0.0;
+      }
     }
   }
   ntmp0 = ntmp1 = ntmp2 = ntmp3 = 0;
@@ -177,6 +178,10 @@ void Angle::ev_tally(int i, int j, int k, int nlocal, int newton_bond,
   if (tmpi == 2) ntmp2++;
   if (tmpi == 3) ntmp3++;
   ntmp0 = nlocal;
+
+  std::cout.precision(17) ;
+  std::cout << "angle " << i << j << k << " F1: " << f1[0] << "/" << f1[1] << "/" << f1[2] << "\n";
+  std::cout << "angle " << i << j << k << " F3: " << f3[0] << "/" << f3[1] << "/" << f3[2] << "\n";
 
   double eanglethird,v[6];
 
@@ -204,6 +209,9 @@ void Angle::ev_tally(int i, int j, int k, int nlocal, int newton_bond,
     v[3] = delx1*f1[1] + delx2*f3[1];
     v[4] = delx1*f1[2] + delx2*f3[2];
     v[5] = dely1*f1[2] + dely2*f3[2];
+
+    std::cout << "virial: " << v[0] << ", " << v[1] << ", " << v[2] << ", " << v[3] << ", " << v[4] << ", " << v[5] <<  "\n";
+
 
     if (vflag_global) {
       if (newton_bond) {
@@ -290,50 +298,22 @@ void Angle::ev_tally(int i, int j, int k, int nlocal, int newton_bond,
     // f3v3 = f3[0]*3 + f3[1]*3 + f3[2]*3;
 
 
-    hf[0] = (f1v1 - f2v2) * delx1 + (f1v1 - f3v3) * (delx1 - delx2) + (f2v2 - f3v3) * (-delx2);
-    hf[1] = (f1v1 - f2v2) * dely1 + (f1v1 - f3v3) * (dely1 - dely2) + (f2v2 - f3v3) * (-dely2);
-    hf[2] = (f1v1 - f2v2) * delz1 + (f1v1 - f3v3) * (delz1 - delz2) + (f2v2 - f3v3) * (-delz2);
+    hf[0] = ((f1v1 - f2v2) * delx1 + (f1v1 - f3v3) * (delx1 - delx2) + (f2v2 - f3v3) * (-delx2)) / 3;
+    hf[1] = ((f1v1 - f2v2) * dely1 + (f1v1 - f3v3) * (dely1 - dely2) + (f2v2 - f3v3) * (-dely2)) / 3;
+    hf[2] = ((f1v1 - f2v2) * delz1 + (f1v1 - f3v3) * (delz1 - delz2) + (f2v2 - f3v3) * (-delz2)) / 3;
 
-    if (0) { //CHECK GHOST VELOCITIES
-      int * sametag = atom->sametag;
-      int p,q;
-      p = i;
-      q = i;
-      while (sametag[q] >= 0) {
-        q = sametag[q];
-        if (vel[p][0] != vel[q][0] || vel[p][1] != vel[q][1] || vel[p][2] != vel[q][2])
-          std::cout << p << "/" << q << ": " << vel[p][0] << "/" << vel[q][0] << ", " << vel[p][1] << "/" << vel[q][1] << ", " << vel[p][2] << "/" << vel[q][2] << "\n";
-      }
-
-      p = j;
-      q = j;
-      while (sametag[q] >= 0) {
-        q = sametag[q];
-        if (vel[p][0] != vel[q][0] || vel[p][1] != vel[q][1] || vel[p][2] != vel[q][2])
-          std::cout << p << "/" << q << ": " << vel[p][0] << "/" << vel[q][0] << ", " << vel[p][1] << "/" << vel[q][1] << ", " << vel[p][2] << "/" << vel[q][2] << "\n";
-      }
-      p = k;
-      q = k;
-      while (sametag[q] >= 0) {
-        q = sametag[q];
-        if (vel[p][0] != vel[q][0] || vel[p][1] != vel[q][1] || vel[p][2] != vel[q][2])
-          std::cout << p << "/" << q << ": " << vel[p][0] << "/" << vel[q][0] << ", " << vel[p][1] << "/" << vel[q][1] << ", " << vel[p][2] << "/" << vel[q][2] << "\n";
-      }
-    }
-    // hf[0] = (2*delx1 - delx2)*f1[0]
+    std::cout << "HFT: " << hf[0] << "/" << hf[1] << "/" << hf[2] << "\n" ;
+    //
+    // hf[0] = (f1v1 - f2v2) * delx1 + (f1v1 - f3v3) * (delx1 - delx2) + (f2v2 - f3v3) * (-delx2);
     // hf[1] = (f1v1 - f2v2) * dely1 + (f1v1 - f3v3) * (dely1 - dely2) + (f2v2 - f3v3) * (-dely2);
     // hf[2] = (f1v1 - f2v2) * delz1 + (f1v1 - f3v3) * (delz1 - delz2) + (f2v2 - f3v3) * (-delz2);
-    // hf[4] = (f1v1 - f2v2) * delx1 + (f1v1 - f3v3) * (delx1 - delx2) + (f2v2 - f3v3) * (-delx2);
-    // hf[5] = (f1v1 - f2v2) * dely1 + (f1v1 - f3v3) * (dely1 - dely2) + (f2v2 - f3v3) * (-dely2);
-    // hf[6] = (f1v1 - f2v2) * delz1 + (f1v1 - f3v3) * (delz1 - delz2) + (f2v2 - f3v3) * (-delz2);
-    // hf[7] = (f1v1 - f2v2) * delx1 + (f1v1 - f3v3) * (delx1 - delx2) + (f2v2 - f3v3) * (-delx2);
-    // hf[8] = (f1v1 - f2v2) * dely1 + (f1v1 - f3v3) * (dely1 - dely2) + (f2v2 - f3v3) * (-dely2);
-    // hf[9] = (f1v1 - f2v2) * delz1 + (f1v1 - f3v3) * (delz1 - delz2) + (f2v2 - f3v3) * (-delz2);
-
-
-    // hf[0] = 1;
-    // hf[1] = 2;
-    // hf[2] = 3;
+    //
+    // hf[3] = (f1v1 - f2v2) * delx1 + (f1v1 - f3v3) * (delx1 - delx2) + (f2v2 - f3v3) * (-delx2);
+    // hf[4] = (f1v1 - f2v2) * dely1 + (f1v1 - f3v3) * (dely1 - dely2) + (f2v2 - f3v3) * (-dely2);
+    // hf[5] = (f1v1 - f2v2) * delz1 + (f1v1 - f3v3) * (delz1 - delz2) + (f2v2 - f3v3) * (-delz2);
+    // hf[6] = (f1v1 - f2v2) * delx1 + (f1v1 - f3v3) * (delx1 - delx2) + (f2v2 - f3v3) * (-delx2);
+    // hf[7] = (f1v1 - f2v2) * dely1 + (f1v1 - f3v3) * (dely1 - dely2) + (f2v2 - f3v3) * (-dely2);
+    // hf[8] = (f1v1 - f2v2) * delz1 + (f1v1 - f3v3) * (delz1 - delz2) + (f2v2 - f3v3) * (-delz2);
 
     if (hflag_global) {
       if (newton_bond) {
@@ -393,6 +373,89 @@ void Angle::ev_tally(int i, int j, int k, int nlocal, int newton_bond,
         hatom[k][8] += THIRD*((2*delz2 - delz1) * f3[2]);
       }
     }
+    std::cout << "del1: " << delx1 << "/" << dely1 << "/" << delz1 << "\n" ;
+    std::cout << "del2: " << delx2 << "/" << dely2 << "/" << delz2 << "\n" ;
+    std::cout << "hatom i: " << hatom[i][0] << "/" << hatom[i][1] << "/" << hatom[i][2] << "\n" ;
+    std::cout << "hatom j: " << hatom[j][0] << "/" << hatom[j][1] << "/" << hatom[j][2] << "\n" ;
+    std::cout << "hatom k: " << hatom[k][0] << "/" << hatom[k][1] << "/" << hatom[k][2] << "\n" ;
+
+    //
+    // int n = atom->nlocal;
+    // int i1, j1;
+    // if (force->newton_bond) n += atom->nghost;
+    // for (i1=0; i1<n; i1++) {
+    //   for (j1=0; j1<9; j1++) {
+    //     hatom[i1][j1] = 0.0;
+    //     // std::cout << "i. " << i1 << " " << j1 << "\n";
+    //   }
+    // }
+
+    // std::cout << "ijk " << i << j << k << "\n";
+    // if (hflag_atom) {
+    //   if (newton_bond || i < nlocal) {
+    //     hatom[i][0] += ((2*delx1 - delx2) * f1[0]);
+    //     hatom[i][1] += ((2*delx1 - delx2) * f1[1]);
+    //     hatom[i][2] += ((2*delx1 - delx2) * f1[2]);
+    //     hatom[i][3] += ((2*dely1 - dely2) * f1[0]);
+    //     hatom[i][4] += ((2*dely1 - dely2) * f1[1]);
+    //     hatom[i][5] += ((2*dely1 - dely2) * f1[2]);
+    //     hatom[i][6] += ((2*delz1 - delz2) * f1[0]);
+    //     hatom[i][7] += ((2*delz1 - delz2) * f1[1]);
+    //     hatom[i][8] += ((2*delz1 - delz2) * f1[2]);
+    //   }
+    //   if (newton_bond || j < nlocal) {
+    //     hatom[j][0] += ((delx1 + delx2) * (f1[0] + f3[0]));
+    //     hatom[j][1] += ((delx1 + delx2) * (f1[1] + f3[1]));
+    //     hatom[j][2] += ((delx1 + delx2) * (f1[2] + f3[2]));
+    //     hatom[j][3] += ((dely1 + dely2) * (f1[0] + f3[0]));
+    //     hatom[j][4] += ((dely1 + dely2) * (f1[1] + f3[1]));
+    //     hatom[j][5] += ((dely1 + dely2) * (f1[2] + f3[2]));
+    //     hatom[j][6] += ((delz1 + delz2) * (f1[0] + f3[0]));
+    //     hatom[j][7] += ((delz1 + delz2) * (f1[1] + f3[1]));
+    //     hatom[j][8] += ((delz1 + delz2) * (f1[2] + f3[2]));
+    //   }
+    //   if (newton_bond || k < nlocal) {
+    //     hatom[k][0] += ((2*delx2 - delx1) * f3[0]);
+    //     hatom[k][1] += ((2*delx2 - delx1) * f3[1]);
+    //     hatom[k][2] += ((2*delx2 - delx1) * f3[2]);
+    //     hatom[k][3] += ((2*dely2 - dely1) * f3[0]);
+    //     hatom[k][4] += ((2*dely2 - dely1) * f3[1]);
+    //     hatom[k][5] += ((2*dely2 - dely1) * f3[2]);
+    //     hatom[k][6] += ((2*delz2 - delz1) * f3[0]);
+    //     hatom[k][7] += ((2*delz2 - delz1) * f3[1]);
+    //     hatom[k][8] += ((2*delz2 - delz1) * f3[2]);
+    //   }
+    // }
+
+
+    // hf[0] = 0.0;
+    // hf[0] = ((2*delx1 - delx2) * f1[0]) * vel[i][0] + ((2*delx1 - delx2) * f1[1]) * vel[i][1] + ((2*delx1 - delx2) * f1[2]) * vel[i][2];
+    // hf[0] += ((delx1 + delx2) * (f1[0] + f3[0])) * vel[j][0] + ((delx1 + delx2) * (f1[1] + f3[1])) * vel[j][1] + ((delx1 + delx2) * (f1[2] + f3[2])) * vel[j][2];
+    // hf[0] += ((2*delx2 - delx1) * f3[0]) * vel[k][0] + ((2*delx2 - delx1) * f3[1]) * vel[k][1] + ((2*delx2 - delx1) * f3[2]) * vel[k][2];
+    // hf[1] = 0.0;
+    // hf[2] = 0.0;
+    // std::cout << "HFT2: " << hf[0] << "/" << hf[1] << "/" << hf[2] << "\n" ;
+    //
+    // hf[0] = 0.0;
+    // hf[0] = hatom[i][0] * vel[i][0] + hatom[i][1] * vel[i][1] + hatom[i][2] * vel[i][2];
+    // hf[0] += hatom[j][0] * vel[j][0] + hatom[j][1] * vel[j][1] + hatom[j][2] * vel[j][2];
+    // hf[0] += hatom[k][0] * vel[k][0] + hatom[k][1] * vel[k][1] + hatom[k][2] * vel[k][2];
+    // hf[1] = 0.0;
+    // hf[2] = 0.0;
+    // std::cout << "HFT3: " << hf[0] << "/" << hf[1] << "/" << hf[2] << "\n" ;
+    //
+    // double hatomi[3] = {0.0,0.0,0.0};
+    // hatomi[0] += ((2*delx1 - delx2) * f1[0]);
+    // hatomi[1] += ((2*delx1 - delx2) * f1[1]);
+    // hatomi[2] += ((2*delx1 - delx2) * f1[2]);
+    //
+    // hf[0] = 0.0;
+    // hf[0] = hatomi[0] * vel[i][0] + hatomi[1] * vel[i][1] + hatomi[2] * vel[i][2];
+    // // hf[0] += hatom[j][0] * vel[j][0] + hatom[j][1] * vel[j][1] + hatom[j][2] * vel[j][2];
+    // // hf[0] += hatom[k][0] * vel[k][0] + hatom[k][1] * vel[k][1] + hatom[k][2] * vel[k][2];
+    // hf[1] = 0.0;
+    // hf[2] = 0.0;
+    // std::cout << "HFT4: " << hf[0] << "/" << hf[1] << "/" << hf[2] << "\n" ;
   }
 }
 
