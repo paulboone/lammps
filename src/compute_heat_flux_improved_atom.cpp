@@ -51,7 +51,6 @@ ComputeHeatFluxImprovedAtom::~ComputeHeatFluxImprovedAtom(){
 void ComputeHeatFluxImprovedAtom::compute_vector()
 {
   double **hatom;
-  double heatflux[3];
   int i, j;
 
   if (atom->nmax > nmax) {
@@ -81,14 +80,15 @@ void ComputeHeatFluxImprovedAtom::compute_vector()
     comm->reverse_comm_compute(this);
 
   double **v = atom->v;
+  double heatflux[3] = {0.0,0.0,0.0};
+  int *mask = atom->mask;
 
-  heatflux[0] = 0.0;
-  heatflux[1] = 0.0;
-  heatflux[2] = 0.0;
   for (i = 0; i < nlocal; i++) {
-    heatflux[0] += hf_atom[i][0] * v[i][0] + hf_atom[i][1] * v[i][1] + hf_atom[i][2] * v[i][2];
-    heatflux[1] += hf_atom[i][3] * v[i][0] + hf_atom[i][4] * v[i][1] + hf_atom[i][5] * v[i][2];
-    heatflux[2] += hf_atom[i][6] * v[i][0] + hf_atom[i][7] * v[i][1] + hf_atom[i][8] * v[i][2];
+    if (mask[i] & groupbit) {
+      heatflux[0] += hf_atom[i][0] * v[i][0] + hf_atom[i][1] * v[i][1] + hf_atom[i][2] * v[i][2];
+      heatflux[1] += hf_atom[i][3] * v[i][0] + hf_atom[i][4] * v[i][1] + hf_atom[i][5] * v[i][2];
+      heatflux[2] += hf_atom[i][6] * v[i][0] + hf_atom[i][7] * v[i][1] + hf_atom[i][8] * v[i][2];
+     }
   }
 
   MPI_Allreduce(heatflux,vector,size_vector,MPI_DOUBLE,MPI_SUM,world);
