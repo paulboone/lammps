@@ -14,6 +14,7 @@
 #include "compute_heat_flux_improved_atom.h"
 #include "atom.h"
 #include "angle.h"
+#include "dihedral.h"
 #include "bond.h"
 #include "comm.h"
 #include "force.h"
@@ -27,7 +28,7 @@ using namespace LAMMPS_NS;
 ComputeHeatFluxImprovedAtom::ComputeHeatFluxImprovedAtom(LAMMPS *lmp, int narg, char **arg) :
   Compute(lmp, narg, arg)
 {
-  if (narg != 3) error->all(FLERR,"Illegal compute ke command");
+  if (narg < 4) error->all(FLERR,"Illegal heat/flux_improved_atom command");
 
   vector_flag = 1;
   extvector = 0;
@@ -37,6 +38,20 @@ ComputeHeatFluxImprovedAtom::ComputeHeatFluxImprovedAtom(LAMMPS *lmp, int narg, 
 
   size_vector = 3;
   vector = new double[size_vector];
+
+  // process optional arguments
+  if (narg == 3) {
+    angleflag = dihedralflag = 1;
+  } else {
+    angleflag = dihedralflag = 0;
+    int iarg = 3;
+    while (iarg < narg) {
+      if (strcmp(arg[iarg],"angle") == 0) angleflag = 1;
+      else if (strcmp(arg[iarg],"dihedral") == 0) dihedralflag = 1;
+      else error->all(FLERR,"Illegal heat/flux_improved_atom command");
+      iarg++;
+    }
+  }
 }
 
 /* ---------------------------------------------------------------------- */
@@ -70,10 +85,19 @@ void ComputeHeatFluxImprovedAtom::compute_vector()
       hf_atom[i][j] = 0.0;
 
   // sum up angle forces
-  hatom = force->angle->hatom;
-  for (i = 0; i < ntotal; i++)
-    for (j = 0; j < 9; j++)
-      hf_atom[i][j] += hatom[i][j];
+  if (angleflag && force->angle) {
+    hatom = force->angle->hatom;
+    for (i = 0; i < ntotal; i++)
+      for (j = 0; j < 9; j++)
+        hf_atom[i][j] += hatom[i][j];
+  }
+
+  if (dihedralflag && force->dihedral) {
+    hatom = force->dihedral->hatom;
+    for (i = 0; i < ntotal; i++)
+      for (j = 0; j < 9; j++)
+        hf_atom[i][j] += hatom[i][j];
+  }
 
   // communicate ghost fluxes between neighbor procs
   if (force->newton)
