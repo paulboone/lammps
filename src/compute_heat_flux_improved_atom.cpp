@@ -11,6 +11,8 @@
    See the README file in the top-level LAMMPS directory.
 ------------------------------------------------------------------------- */
 
+
+#include <string.h>
 #include "compute_heat_flux_improved_atom.h"
 #include "atom.h"
 #include "angle.h"
