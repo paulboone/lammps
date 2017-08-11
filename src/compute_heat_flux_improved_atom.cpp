@@ -32,8 +32,11 @@ ComputeHeatFluxImprovedAtom::ComputeHeatFluxImprovedAtom(LAMMPS *lmp, int narg, 
 {
   if (narg < 4) error->all(FLERR,"Illegal heat/flux_improved_atom command");
 
+  peratom_flag = 1;
+  size_peratom_cols = 9;
+  comm_reverse = 9;
   vector_flag = 1;
-  extvector = 0;
+  extvector = 1;
 
   nmax = 0;
   hf_atom = NULL;
@@ -169,6 +172,6 @@ void ComputeHeatFluxImprovedAtom::unpack_reverse_comm(int n, int *list, double *
 
 double ComputeHeatFluxImprovedAtom::memory_usage()
 {
-  double bytes = nmax*3 * sizeof(double);
+  double bytes = nmax*9 * sizeof(double);
   return bytes;
 }
