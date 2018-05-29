@@ -38,7 +38,7 @@ class ComputeHeatFluxImprovedAtom : public Compute {
   int nmax;
   double **hf_atom;
 private:
-  int angleflag,dihedralflag;
+  int angleflag,dihedralflag,improperflag;
 };
 
 }

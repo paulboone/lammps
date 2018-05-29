@@ -28,7 +28,7 @@ class Improper : protected Pointers {
   int writedata;                  // 1 if writes coeffs to data file
   double energy;                  // accumulated energies
   double virial[6];               // accumlated virial
-  double *eatom,**vatom;          // accumulated per-atom energy/virial
+  double *eatom,**vatom,**hatom;  // accumulated per-atom energy/virial/atomic heat flux
   unsigned int datamask;
   unsigned int datamask_ext;
 
@@ -58,7 +58,8 @@ class Improper : protected Pointers {
   int evflag;
   int eflag_either,eflag_global,eflag_atom;
   int vflag_either,vflag_global,vflag_atom;
-  int maxeatom,maxvatom;
+  int hflag_atom;
+  int maxeatom,maxvatom,maxhatom;
 
   void ev_setup(int, int);
   void ev_tally(int, int, int, int, int, int, double,
