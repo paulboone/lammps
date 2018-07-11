@@ -28,7 +28,7 @@ class Dihedral : protected Pointers {
   int writedata;                     // 1 if writes coeffs to data file
   double energy;                     // accumulated energy
   double virial[6];                  // accumlated virial
-  double *eatom,**vatom,**hatom;             // accumulated per-atom energy/virial
+  double *eatom,**vatom,**hatom;     // accumulated per-atom energy/virial//atomic heat flux
   unsigned int datamask;
   unsigned int datamask_ext;
 
