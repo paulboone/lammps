@@ -1,3 +1,16 @@
+NOTE: This fork of LAMMPS is deprecated!
+
+You should look at using
+https://docs.lammps.org/compute_stress_atom.html in the main LAMMPS
+branch, which should give mathematically identical results to this.
+
+See discussion here: https://github.com/lammps/lammps/pull/1462
+
+---------------------------------------------------------------------
+
+
+
+
 This is the LAMMPS software package.
 
 LAMMPS stands for Large-scale Atomic/Molecular Massively Parallel
